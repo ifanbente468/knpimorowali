@@ -1,0 +1,285 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  ADMIN
+  EDITOR
+  MEMBER
+}
+
+enum MemberStatus {
+  PENDING
+  ACTIVE
+  REJECTED
+  SUSPENDED
+}
+
+enum ContentStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+enum EventStatus {
+  SCHEDULED
+  COMPLETED
+  CANCELLED
+}
+
+enum AspirationStatus {
+  NEW
+  IN_PROGRESS
+  RESOLVED
+  REJECTED
+}
+
+enum LetterType {
+  INCOMING
+  OUTGOING
+}
+
+enum LetterStatus {
+  RECEIVED
+  PROCESSED
+  ARCHIVED
+}
+
+enum FinanceType {
+  INCOME
+  EXPENSE
+}
+
+enum OrganizationType {
+  DPD
+  OKP
+  SAYAP
+}
+
+model User {
+  id           String    @id @default(cuid())
+  email        String    @unique
+  passwordHash String
+  name         String
+  phone        String?
+  avatarUrl    String?
+  role         Role      @default(MEMBER)
+  isActive     Boolean   @default(true)
+  lastLoginAt  DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  member             Member?
+  sessions           Session[]
+  news               News[]
+  agendas            Agenda[]
+  gallery            GalleryItem[]
+  letters            Letter[]
+  finance            Finance[]
+  organizations      Organization[]
+  aspirationsCreated Aspiration[] @relation("AspirationAuthor")
+  aspirationsHandled Aspiration[] @relation("AspirationHandler")
+  verifiedMembers    Member[]     @relation("MemberVerifier")
+  audits             AuditLog[]
+
+  @@index([role])
+}
+
+model Session {
+  id        String   @id @default(cuid())
+  tokenHash String   @unique
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  ip        String?
+  userAgent String?
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([expiresAt])
+}
+
+model Member {
+  id              String       @id @default(cuid())
+  userId          String       @unique
+  user            User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  memberNo        String?      @unique
+  nik             String       @unique
+  birthDate       DateTime
+  gender          String
+  address         String
+  district        String
+  okp             String?
+  occupation      String?
+  status          MemberStatus @default(PENDING)
+  rejectionReason String?
+  joinedAt        DateTime     @default(now())
+  verifiedAt      DateTime?
+  verifiedById    String?
+  verifiedBy      User?        @relation("MemberVerifier", fields: [verifiedById], references: [id], onDelete: SetNull)
+  cardIssuedAt    DateTime?
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+
+  @@index([status])
+  @@index([district])
+}
+
+model News {
+  id          String        @id @default(cuid())
+  slug        String        @unique
+  title       String
+  excerpt     String
+  content     String
+  category    String        @default("KEGIATAN")
+  coverImage  String?
+  status      ContentStatus @default(DRAFT)
+  publishedAt DateTime?
+  authorId    String
+  author      User          @relation(fields: [authorId], references: [id], onDelete: Restrict)
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  @@index([status, publishedAt])
+  @@index([category])
+}
+
+model Agenda {
+  id          String      @id @default(cuid())
+  slug        String      @unique
+  title       String
+  description String
+  location    String
+  startsAt    DateTime
+  endsAt      DateTime?
+  capacity    Int?
+  status      EventStatus @default(SCHEDULED)
+  isPublished Boolean     @default(true)
+  createdById String
+  createdBy   User        @relation(fields: [createdById], references: [id], onDelete: Restrict)
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  @@index([startsAt])
+  @@index([status])
+}
+
+model GalleryItem {
+  id          String   @id @default(cuid())
+  title       String
+  album       String   @default("Kegiatan")
+  imageUrl    String
+  caption     String?
+  sortOrder   Int      @default(0)
+  createdById String
+  createdBy   User     @relation(fields: [createdById], references: [id], onDelete: Restrict)
+  createdAt   DateTime @default(now())
+
+  @@index([album])
+}
+
+model Aspiration {
+  id            String           @id @default(cuid())
+  trackingCode  String           @unique
+  name          String
+  email         String?
+  phone         String?
+  category      String
+  subject       String
+  message       String
+  status        AspirationStatus @default(NEW)
+  response      String?
+  respondedAt   DateTime?
+  respondedById String?
+  respondedBy   User?            @relation("AspirationHandler", fields: [respondedById], references: [id], onDelete: SetNull)
+  authorId      String?
+  author        User?            @relation("AspirationAuthor", fields: [authorId], references: [id], onDelete: SetNull)
+  isPublic      Boolean          @default(false)
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
+
+  @@index([status])
+  @@index([createdAt])
+}
+
+model Letter {
+  id          String       @id @default(cuid())
+  number      String       @unique
+  type        LetterType
+  subject     String
+  sender      String
+  recipient   String
+  date        DateTime
+  fileUrl     String?
+  status      LetterStatus @default(RECEIVED)
+  notes       String?
+  createdById String
+  createdBy   User         @relation(fields: [createdById], references: [id], onDelete: Restrict)
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  @@index([type, date])
+}
+
+model Finance {
+  id          String      @id @default(cuid())
+  date        DateTime
+  type        FinanceType
+  category    String
+  description String
+  amount      Int
+  reference   String?
+  createdById String
+  createdBy   User        @relation(fields: [createdById], references: [id], onDelete: Restrict)
+  createdAt   DateTime    @default(now())
+
+  @@index([date])
+  @@index([type])
+}
+
+model Organization {
+  id          String           @id @default(cuid())
+  name        String           @unique
+  type        OrganizationType @default(OKP)
+  leader      String?
+  address     String?
+  phone       String?
+  email       String?
+  website     String?
+  logoUrl     String?
+  description String?
+  sortOrder   Int              @default(0)
+  isActive    Boolean          @default(true)
+  createdById String?
+  createdBy   User?            @relation(fields: [createdById], references: [id], onDelete: SetNull)
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+
+  @@index([type, isActive])
+}
+
+model Setting {
+  key       String   @id
+  value     String
+  updatedAt DateTime @updatedAt
+}
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  actorId   String?
+  actor     User?    @relation(fields: [actorId], references: [id], onDelete: SetNull)
+  action    String
+  entity    String
+  entityId  String?
+  meta      String?
+  ip        String?
+  createdAt DateTime @default(now())
+
+  @@index([createdAt])
+  @@index([entity, entityId])
+}
