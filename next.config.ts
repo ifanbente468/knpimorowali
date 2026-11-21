@@ -28,9 +28,13 @@ const securityHeaders = [
 ];
 
 const nextConfig: NextConfig = {
+  output: process.env.BUILD_STANDALONE === "1" ? "standalone" : undefined,
   poweredByHeader: false,
   reactStrictMode: true,
   serverExternalPackages: ["@prisma/client", "bcryptjs"],
+  outputFileTracingIncludes: {
+    "/**/*": ["./node_modules/.prisma/client/**/*", "./prisma/**/*"],
+  },
   typescript: {
     ignoreBuildErrors: true,
   },
