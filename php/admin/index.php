@@ -81,16 +81,17 @@ $initials = strtoupper(substr($firstName, 0, 1)) . strtoupper(substr((string) ($
 $roleLabel = $user['role'] === 'ADMIN' ? 'Administrator' : 'Editor';
 
 $nav = [
-    ['#ringkasan', 'Ringkasan', 'gauge', true, in_array($user['role'], ['ADMIN', 'EDITOR'], true)],
-    ['#anggota', 'Anggota', 'users', false, true],
-    ['#berita', 'Berita', 'newspaper', false, true],
-    ['#agenda', 'Agenda', 'calendar', false, true],
-    ['#galeri', 'Galeri', 'images', false, true],
-    ['#aspirasi', 'Aspirasi', 'message', false, true],
-    ['#persuratan', 'Persuratan', 'mail-open', false, $user['role'] === 'ADMIN'],
-    ['#keuangan', 'Keuangan', 'banknote', false, $user['role'] === 'ADMIN'],
-    ['#pengguna', 'Pengguna', 'user-square', false, $user['role'] === 'ADMIN'],
-    ['#pengaturan', 'Pengaturan', 'settings', false, $user['role'] === 'ADMIN'],
+    ['index.php', 'Ringkasan', 'gauge', true, true],
+    ['anggota.php', 'Anggota', 'users', false, true],
+    ['crud.php?m=berita', 'Berita', 'newspaper', false, true],
+    ['crud.php?m=agenda', 'Agenda', 'calendar', false, true],
+    ['crud.php?m=galeri', 'Galeri', 'images', false, true],
+    ['aspirasi.php', 'Aspirasi', 'message', false, true],
+    ['crud.php?m=persuratan', 'Persuratan', 'mail-open', false, $user['role'] === 'ADMIN'],
+    ['crud.php?m=keuangan', 'Keuangan', 'banknote', false, $user['role'] === 'ADMIN'],
+    ['crud.php?m=organisasi', 'Organisasi', 'building', false, $user['role'] === 'ADMIN'],
+    ['crud.php?m=pengguna', 'Pengguna', 'user-square', false, $user['role'] === 'ADMIN'],
+    ['pengaturan.php', 'Pengaturan', 'settings', false, $user['role'] === 'ADMIN'],
 ];
 ?>
 <!DOCTYPE html>
@@ -148,8 +149,8 @@ $nav = [
         <p class="mt-1 text-sm text-muted">Data per <?= e(tanggal(date('Y-m-d'))) ?> — DPD KNPI Kabupaten Morowali</p>
       </div>
       <div class="flex flex-wrap gap-2">
-        <a href="#berita" class="btn-primary"><?= icon('plus', 'h-4 w-4') ?>Tulis berita</a>
-        <a href="#agenda" class="btn-outline"><?= icon('calendar', 'h-4 w-4') ?>Agenda baru</a>
+        <a href="crud.php?m=berita&action=new" class="btn-primary"><?= icon('plus', 'h-4 w-4') ?>Tulis berita</a>
+        <a href="crud.php?m=agenda&action=new" class="btn-outline"><?= icon('calendar', 'h-4 w-4') ?>Agenda baru</a>
       </div>
     </div>
 
