@@ -1,11 +1,36 @@
 <?php
 declare(strict_types=1);
 
+function icon(string $name, string $class = 'h-4 w-4'): string
+{
+    $paths = [
+        'arrow' => '<path d="M5 12h14M13 6l6 6-6 6"/>',
+        'check' => '<path d="M20 6 9 17l-5-5"/>',
+        'calendar' => '<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 11h18"/>',
+        'pin' => '<path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 1 1 16 0Z"/><circle cx="12" cy="10" r="3"/>',
+        'users' => '<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>',
+        'megaphone' => '<path d="m3 11 18-5v12L3 14v-3Z"/><path d="M11.6 16.8a3 3 0 1 1-5.8-1.6"/>',
+        'mail' => '<rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 6-10 7L2 6"/>',
+        'phone' => '<path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.8 19.8 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.12 4.18 2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.36 1.9.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.9.34 1.85.57 2.81.7A2 2 0 0 1 22 16.92Z"/>',
+        'menu' => '<path d="M4 6h16M4 12h16M4 18h16"/>',
+        'x' => '<path d="M18 6 6 18M6 6l12 12"/>',
+    ];
+    $path = $paths[$name] ?? '';
+    return '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="' . e($class) . '" aria-hidden="true">' . $path . '</svg>';
+}
+
 function page_header(string $title, array $settings = []): void
 {
     $siteName = setting($settings, 'site_name', APP_NAME);
     $tagline = setting($settings, 'site_tagline', 'Pemuda Morowali Bergerak, Berkarya, Berdaya.');
     $user = current_user();
+    $nav = [
+        ['index.php', 'Beranda', true],
+        ['index.php#berita', 'Berita', false],
+        ['index.php#agenda', 'Agenda', false],
+        ['index.php#organisasi', 'Organisasi', false],
+        ['index.php#galeri', 'Galeri', false],
+    ];
     ?>
 <!DOCTYPE html>
 <html lang="id">
@@ -14,121 +39,96 @@ function page_header(string $title, array $settings = []): void
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title><?= e($title) ?> — <?= e($siteName) ?></title>
 <meta name="description" content="<?= e($tagline) ?>">
-<style>
-:root{--navy:#0b2545;--blue:#0a3bc4;--blue2:#2f6bff;--muted:#5b6b82;--line:#dde5f0;--bg:#f4f6fb;--gold:#f4b740}
-*{box-sizing:border-box}html{scroll-behavior:smooth}
-body{margin:0;background:var(--bg);color:var(--navy);font-family:system-ui,Segoe UI,Roboto,Arial,sans-serif;line-height:1.55}
-a{color:var(--blue);text-decoration:none}a:hover{text-decoration:underline}
-img{max-width:100%;display:block}
-.container{max-width:1120px;margin:0 auto;padding:0 20px}
-.topbar{background:#081b33;color:#cfe0ff;font-size:13px;padding:8px 0}
-.topbar .container{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}
-header.site{background:#fff;border-bottom:1px solid var(--line);position:sticky;top:0;z-index:20}
-.nav{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:12px 0}
-.brand{display:flex;align-items:center;gap:12px;font-weight:800;color:var(--navy);font-size:18px}
-.brand img{width:40px;height:40px;border-radius:10px;object-fit:cover}
-.menu{display:flex;gap:18px;flex-wrap:wrap;font-size:14px;font-weight:600}
-.menu a{color:var(--navy)}.menu a:hover{color:var(--blue)}
-.btn{display:inline-block;padding:10px 16px;border-radius:9px;font-weight:700;font-size:14px}
-.btn-primary{background:var(--blue);color:#fff}.btn-primary:hover{background:#0832a6;text-decoration:none}
-.btn-outline{border:1px solid var(--line);color:var(--navy);background:#fff}.btn-outline:hover{border-color:var(--blue);text-decoration:none}
-.hero{background:linear-gradient(135deg,#0a2a5e,#0a3bc4);color:#fff;padding:64px 0 56px}
-.hero-grid{display:grid;grid-template-columns:1.2fr .8fr;gap:32px;align-items:center}
-.hero h1{font-size:38px;line-height:1.15;margin:0 0 14px}
-.hero p{margin:0 0 22px;color:#d7e3ff;max-width:52ch}
-.hero-photo{border-radius:18px;overflow:hidden;border:1px solid rgba(255,255,255,.25);background:rgba(255,255,255,.08)}
-.hero-photo img{width:100%;height:320px;object-fit:cover}
-.hero-actions{display:flex;gap:10px;flex-wrap:wrap}
-.hero-actions .btn-outline{background:transparent;color:#fff;border-color:rgba(255,255,255,.5)}
-section.block{padding:48px 0}
-.section-title{display:flex;align-items:end;justify-content:space-between;gap:16px;margin-bottom:22px}
-.section-title h2{margin:0;font-size:24px}
-.section-title p{margin:4px 0 0;color:var(--muted);font-size:14px}
-.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
-.stat{background:#fff;border:1px solid var(--line);border-radius:14px;padding:18px}
-.stat strong{display:block;font-size:26px}.stat span{color:var(--muted);font-size:13px}
-.grid-3{display:grid;grid-template-columns:repeat(3,1fr);gap:18px}
-.card{background:#fff;border:1px solid var(--line);border-radius:14px;overflow:hidden}
-.card .body{padding:18px}.card h3{margin:0 0 8px;font-size:17px}
-.card p{margin:0;color:var(--muted);font-size:14px}
-.card .meta{font-size:12px;color:var(--muted);margin-bottom:8px}
-.card img{height:170px;width:100%;object-fit:cover;background:#dfe7f5}
-.chip{display:inline-block;background:#e8efff;color:#0a3bc4;border-radius:999px;padding:3px 10px;font-size:11px;font-weight:700}
-.list{display:grid;gap:12px}
-.row{background:#fff;border:1px solid var(--line);border-radius:12px;padding:16px;display:flex;justify-content:space-between;gap:16px;align-items:center}
-.row h3{margin:0 0 4px;font-size:16px}.row .meta{color:var(--muted);font-size:13px}
-.orgs{display:flex;flex-wrap:wrap;gap:10px}
-.org{background:#fff;border:1px solid var(--line);border-radius:999px;padding:8px 14px;font-size:13px;font-weight:600}
-.gallery{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
-.gallery img{height:150px;width:100%;object-fit:cover;border-radius:12px;background:#dfe7f5}
-footer.site{background:#081b33;color:#cfe0ff;padding:36px 0;margin-top:24px}
-footer.site .cols{display:grid;grid-template-columns:2fr 1fr 1fr;gap:24px}
-footer.site h4{margin:0 0 10px;color:#fff;font-size:14px}
-footer.site a{color:#cfe0ff;font-size:13px}
-footer.site .copy{border-top:1px solid rgba(255,255,255,.15);margin-top:24px;padding-top:14px;font-size:12px;color:#9fb6d8}
-.alert{padding:12px 14px;border-radius:10px;font-size:14px;margin-bottom:16px}
-.alert.err{background:#fdecec;color:#a11a1a;border:1px solid #f5c2c2}
-.alert.ok{background:#e9f8ef;color:#136b34;border:1px solid #bfe8cd}
-.auth{max-width:460px;margin:56px auto;padding:0 16px}
-.auth .box{background:#fff;border:1px solid var(--line);border-radius:16px;padding:28px}
-label{display:block;font-size:13px;font-weight:700;margin:14px 0 6px}
-input{width:100%;padding:11px 12px;border:1px solid var(--line);border-radius:9px;font-size:14px}
-button{margin-top:20px;width:100%;padding:12px;border:0;border-radius:9px;background:var(--blue);color:#fff;font-weight:700;font-size:15px;cursor:pointer}
-@media(max-width:860px){.hero-grid{grid-template-columns:1fr}.stats{grid-template-columns:repeat(2,1fr)}.grid-3{grid-template-columns:1fr}.gallery{grid-template-columns:repeat(2,1fr)}footer.site .cols{grid-template-columns:1fr}.hero h1{font-size:30px}}
-</style>
+<link rel="icon" href="images/logo.jpg">
+<link rel="stylesheet" href="assets/app.css">
 </head>
 <body>
-<div class="topbar"><div class="container">
-  <span><?= e(setting($settings, 'address', 'Sekretariat DPD KNPI Kabupaten Morowali')) ?></span>
-  <span><?= e(setting($settings, 'contact_email', 'sekretariat@knpi-morowali.or.id')) ?></span>
-</div></div>
-<header class="site"><div class="container nav">
-  <a class="brand" href="index.php">
-    <img src="images/logo.jpg" alt="Logo <?= e($siteName) ?>">
-    <span><?= e($siteName) ?></span>
-  </a>
-  <nav class="menu">
-    <a href="index.php">Beranda</a>
-    <a href="index.php#berita">Berita</a>
-    <a href="index.php#agenda">Agenda</a>
-    <a href="index.php#organisasi">Organisasi</a>
-    <a href="index.php#galeri">Galeri</a>
-    <?php if ($user): ?>
-      <?php if (in_array($user['role'], ['ADMIN', 'EDITOR'], true)): ?>
-        <a href="admin/index.php" class="btn btn-outline">Dashboard</a>
+<a href="#konten" class="skip-link">Lewati ke konten utama</a>
+<header class="sticky top-0 z-40 border-b border-line bg-white/95 backdrop-blur">
+  <div class="container-page flex h-[76px] items-center justify-between gap-4">
+    <a href="index.php" class="flex shrink-0 items-center gap-3" aria-label="<?= e($siteName) ?> beranda">
+      <span class="flex h-12 w-[72px] items-center justify-center rounded-lg border border-line bg-white p-1">
+        <img src="images/logo.jpg" alt="Logo KNPI" class="h-full w-full object-contain" width="120" height="72">
+      </span>
+      <span class="hidden sm:block">
+        <span class="block text-sm font-extrabold leading-tight text-navy"><?= e($siteName) ?></span>
+        <span class="block text-[11px] font-medium text-muted">Komite Nasional Pemuda Indonesia</span>
+      </span>
+    </a>
+
+    <nav aria-label="Navigasi utama" class="hidden items-center gap-1 lg:flex">
+      <?php foreach ($nav as [$href, $label, $active]): ?>
+        <a href="<?= e($href) ?>" class="rounded-lg px-3 py-2 text-sm font-semibold transition <?= $active ? 'bg-brand-50 text-brand-700' : 'text-navy hover:bg-canvas hover:text-brand-600' ?>"><?= e($label) ?></a>
+      <?php endforeach; ?>
+    </nav>
+
+    <div class="hidden items-center gap-2 lg:flex">
+      <?php if ($user): ?>
+        <?php if (in_array($user['role'], ['ADMIN', 'EDITOR'], true)): ?>
+          <a href="admin/index.php" class="btn-outline">Dashboard</a>
+        <?php endif; ?>
+        <a href="logout.php" class="btn-ghost">Keluar</a>
+      <?php else: ?>
+        <a href="login.php" class="btn-ghost">Masuk</a>
+        <a href="index.php#aspirasi" class="btn-accent">Kirim Aspirasi</a>
       <?php endif; ?>
-      <a href="logout.php" class="btn btn-outline">Keluar</a>
-    <?php else: ?>
-      <a href="login.php" class="btn btn-primary">Masuk</a>
-    <?php endif; ?>
-  </nav>
-</div></header>
+    </div>
+
+    <a href="login.php" class="btn-outline lg:hidden">Masuk</a>
+  </div>
+</header>
+<main id="konten">
 <?php
 }
 
 function page_footer(array $settings = []): void
 {
-    $siteName = setting($settings, 'site_name', APP_NAME);
+    $fullName = 'DPD KNPI Kabupaten Morowali';
+    $email = setting($settings, 'contact_email', 'sekretariat@knpi-morowali.or.id');
+    $phone = setting($settings, 'contact_phone', '+62 461 000 000');
+    $address = setting($settings, 'address', 'Sekretariat DPD KNPI Kabupaten Morowali, Bungku Tengah, Sulawesi Tengah');
     ?>
-<footer class="site"><div class="container">
-  <div class="cols">
-    <div>
-      <h4><?= e($siteName) ?></h4>
-      <p style="font-size:13px;color:#9fb6d8;margin:0"><?= e(setting($settings, 'site_tagline', 'Pemuda Morowali Bergerak, Berkarya, Berdaya.')) ?></p>
+</main>
+<footer class="mt-16 bg-navy text-white">
+  <div class="container-page grid gap-10 py-14 md:grid-cols-4">
+    <div class="md:col-span-2">
+      <div class="text-lg font-extrabold"><?= e($fullName) ?></div>
+      <p class="mt-2 max-w-md text-sm leading-6 text-slate-300">
+        <?= e(setting($settings, 'site_tagline', 'Pemuda Morowali Bergerak, Berkarya, Berdaya.')) ?>
+        Wadah berhimpun pemuda dan organisasi kepemudaan Kabupaten Morowali.
+      </p>
+      <div class="mt-5 space-y-2 text-sm text-slate-300">
+        <p class="flex items-start gap-2"><?= icon('pin', 'mt-0.5 h-4 w-4 shrink-0 text-accent') ?><span><?= e($address) ?></span></p>
+        <p class="flex items-center gap-2"><?= icon('mail', 'h-4 w-4 text-accent') ?><a href="mailto:<?= e($email) ?>" class="hover:underline"><?= e($email) ?></a></p>
+        <p class="flex items-center gap-2"><?= icon('phone', 'h-4 w-4 text-accent') ?><a href="tel:<?= e(preg_replace('/\s+/', '', $phone)) ?>" class="hover:underline"><?= e($phone) ?></a></p>
+      </div>
     </div>
     <div>
-      <h4>Kontak</h4>
-      <p style="font-size:13px;margin:0"><?= e(setting($settings, 'contact_email', '')) ?></p>
-      <p style="font-size:13px;margin:4px 0 0"><?= e(setting($settings, 'contact_phone', '')) ?></p>
+      <div class="text-sm font-bold uppercase tracking-wider text-accent">Tautan</div>
+      <ul class="mt-4 space-y-2 text-sm text-slate-300">
+        <li><a href="index.php" class="hover:text-white">Beranda</a></li>
+        <li><a href="index.php#berita" class="hover:text-white">Berita</a></li>
+        <li><a href="index.php#agenda" class="hover:text-white">Agenda</a></li>
+        <li><a href="index.php#organisasi" class="hover:text-white">OKP &amp; Sayap</a></li>
+        <li><a href="index.php#galeri" class="hover:text-white">Galeri</a></li>
+      </ul>
     </div>
     <div>
-      <h4>Halaman</h4>
-      <p style="margin:0"><a href="index.php">Beranda</a></p>
-      <p style="margin:4px 0 0"><a href="login.php">Masuk</a></p>
+      <div class="text-sm font-bold uppercase tracking-wider text-accent">Layanan</div>
+      <ul class="mt-4 space-y-2 text-sm text-slate-300">
+        <li><a href="login.php" class="hover:text-white">Masuk / Akun</a></li>
+        <li><a href="index.php#aspirasi" class="hover:text-white">Kirim Aspirasi</a></li>
+        <li><a href="install.php" class="hover:text-white">Instalasi</a></li>
+      </ul>
     </div>
   </div>
-  <div class="copy">© <?= date('Y') ?> <?= e($siteName) ?>. Semua hak dilindungi.</div>
-</div></footer>
+  <div class="border-t border-white/10">
+    <div class="container-page flex flex-wrap items-center justify-between gap-2 py-5 text-xs text-slate-400">
+      <span>© <?= date('Y') ?> <?= e($fullName) ?>. Seluruh hak dilindungi.</span>
+      <span>Dibangun untuk pemuda Morowali.</span>
+    </div>
+  </div>
+</footer>
 </body>
 </html>
 <?php

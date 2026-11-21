@@ -49,18 +49,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 page_header('Masuk', $settings);
 ?>
-<div class="auth"><div class="box">
-  <h1 style="font-size:22px;margin:0 0 6px">Masuk</h1>
-  <p style="margin:0;color:#5b6b82;font-size:14px">Gunakan akun admin yang dibuat saat instalasi.</p>
-  <?php if ($error): ?><div class="alert err" style="margin-top:16px"><?= e($error) ?></div><?php endif; ?>
-  <form method="post">
-    <input type="hidden" name="csrf" value="<?= e(csrf_token()) ?>">
-    <label for="email">Email</label>
-    <input id="email" type="email" name="email" required autocomplete="email">
-    <label for="password">Kata sandi</label>
-    <input id="password" type="password" name="password" required autocomplete="current-password">
-    <button type="submit">Masuk</button>
-  </form>
-  <p style="margin:16px 0 0;font-size:13px"><a href="index.php">Kembali ke beranda</a></p>
-</div></div>
+<section class="container-page py-16">
+  <div class="mx-auto w-full max-w-md surface p-7">
+    <h1 class="text-2xl font-extrabold text-navy">Masuk</h1>
+    <p class="mt-1 text-sm text-muted">Gunakan akun admin yang dibuat saat instalasi.</p>
+    <?php if ($error): ?><div class="mt-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-danger"><?= e($error) ?></div><?php endif; ?>
+    <form method="post" class="mt-5">
+      <input type="hidden" name="csrf" value="<?= e(csrf_token()) ?>">
+      <label class="label" for="email">Email</label>
+      <input class="input" id="email" type="email" name="email" required autocomplete="email">
+      <label class="label mt-4" for="password">Kata sandi</label>
+      <input class="input" id="password" type="password" name="password" required autocomplete="current-password">
+      <button type="submit" class="btn-primary mt-5 w-full">Masuk</button>
+    </form>
+    <p class="mt-4 text-sm"><a class="font-semibold text-brand-600 hover:underline" href="index.php">Kembali ke beranda</a></p>
+  </div>
+</section>
 <?php page_footer($settings); ?>

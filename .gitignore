@@ -24,3 +24,5 @@ tsconfig.tsbuildinfo
 knpi-morowali-cpanel.zip
 *.zip
 .aimonitor/
+
+php/config.php
