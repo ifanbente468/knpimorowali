@@ -1,0 +1,52 @@
+KNPI MOROWALI — CARA UPLOAD KE cPANEL (PHP, TAHAP 1)
+=====================================================
+
+Konsep sama seperti IUJP: isi zip = isi public_html.
+Yang tersedia di tahap ini: instalasi, login/logout, beranda (statistik,
+berita, agenda, organisasi, galeri). Panel admin & fitur lain menyusul.
+
+LANGKAH
+-------
+1. File Manager > /home/knph4988/public_html
+   Hapus file lama yang tidak perlu, lalu Upload zip ini dan Extract.
+
+2. Buat config.php di public_html:
+   - Salin config.sample.php menjadi config.php
+   - Isi:
+       'app_url' => 'https://knpimorowali.com',
+       'db' => [
+         'host' => 'localhost',
+         'name' => 'knph4988_knpi',
+         'user' => 'knph4988_knpi',
+         'pass' => 'PASSWORD_DATABASE',
+       ],
+       'install_key' => 'KUNCI-ACAK-PILIHAN-ANDA',
+   - Jangan bagikan config.php.
+
+3. cPanel > Domains > knpimorowali.com > Manage
+   Document Root = public_html
+
+4. Buka: https://knpimorowali.com/install.php
+   - Masukkan install_key dari config.php
+   - Isi nama situs, nama admin, email, kata sandi (min 8)
+   - Setelah selesai, halaman install terkunci otomatis.
+
+5. Masuk: https://knpimorowali.com/login.php
+
+6. Setelah login, kembali ke beranda. Logout lewat menu "Keluar".
+
+CATATAN
+-------
+- Aplikasi Node.js di folder /home/knph4988/knpi-morowali tidak dipakai lagi
+  untuk domain ini. Boleh dibiarkan atau dimatikan di Setup Node.js App.
+- Database MySQL knph4988_knpi harus sudah berisi tabel (sudah dibuat).
+- File .htaccess di zip menonaktifkan directory listing dan menutup akses
+  langsung ke config.php/lib.php/theme.php.
+- Kalau muncul "Index of /": Document Root masih salah atau index.php tidak
+  terekstrak.
+
+TAHAP BERIKUTNYA
+----------------
+- Tahap 2: berita/agenda/galeri + admin CRUD
+- Tahap 3: anggota + kartu QR + verifikasi
+- Tahap 4: aspirasi, persuratan, keuangan, pengaturan
