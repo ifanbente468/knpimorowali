@@ -45,12 +45,6 @@ $chairmanName = setting($settings, 'chairman_name', '');
 $chairmanTitle = setting($settings, 'chairman_title', 'Ketua DPD KNPI Kabupaten Morowali');
 $heroImage = image_src(setting($settings, 'hero_image', '/images/hero.jpg'));
 
-function jam_wita(string $value): string
-{
-    $time = strtotime($value);
-    return $time === false ? '' : date('H:i', $time - 8 * 3600 + 8 * 3600) . ' WITA';
-}
-
 page_header('Beranda', $settings);
 ?>
 <section class="relative overflow-hidden bg-navy text-white">

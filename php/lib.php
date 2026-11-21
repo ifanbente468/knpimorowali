@@ -77,12 +77,6 @@ function e(mixed $value): string
     return htmlspecialchars((string) $value, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
 }
 
-function base_url(string $path = ''): string
-{
-    $base = rtrim((string) cfg('app_url', ''), '/');
-    return $base . '/' . ltrim($path, '/');
-}
-
 function is_installed(): bool
 {
     try {

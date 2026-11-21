@@ -13,6 +13,12 @@ Options -Indexes
 <Files "theme.php">
   Require all denied
 </Files>
+<Files "CARA-UPLOAD.txt">
+  Require all denied
+</Files>
+<FilesMatch "^(error_log|\.php-sessions)$">
+  Require all denied
+</FilesMatch>
 
 RewriteEngine On
 RewriteRule ^berita/?$ berita.php [L,QSA]

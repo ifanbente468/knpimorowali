@@ -26,3 +26,8 @@ knpi-morowali-cpanel.zip
 .aimonitor/
 
 php/config.php
+
+Screenshot*.png
+*.tar.gz
+error_log
+.php-sessions/

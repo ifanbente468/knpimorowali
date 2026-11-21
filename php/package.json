@@ -1,0 +1,12 @@
+{
+  "name": "knpi-morowali-php",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Tailwind build tooling for KNPI Morowali PHP app",
+  "scripts": {
+    "build:css": "tailwindcss -c tailwind.config.js -i assets/tailwind.css -o assets/app.css --minify"
+  },
+  "devDependencies": {
+    "tailwindcss": "3.4.19"
+  }
+}
