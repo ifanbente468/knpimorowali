@@ -2,6 +2,15 @@
 declare(strict_types=1);
 
 if (session_status() !== PHP_SESSION_ACTIVE) {
+    // Hosting ini punya session.save_path global yang tidak ada; pakai folder sendiri.
+    $sessionDir = dirname(__DIR__) . '/.php-sessions';
+    if (!is_dir($sessionDir)) {
+        @mkdir($sessionDir, 0700, true);
+    }
+    if (is_dir($sessionDir) && is_writable($sessionDir)) {
+        ini_set('session.save_path', $sessionDir);
+    }
+
     session_set_cookie_params([
         'httponly' => true,
         'samesite' => 'Lax',
