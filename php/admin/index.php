@@ -1,6 +1,7 @@
 <?php
 declare(strict_types=1);
 require_once dirname(__DIR__) . '/lib.php';
+require_once dirname(__DIR__) . '/theme.php';
 
 if (!config() || !is_installed()) {
     redirect('../install.php');
@@ -17,37 +18,79 @@ if (!in_array($user['role'], ['ADMIN', 'EDITOR'], true)) {
 $settings = settings_map();
 $pdo = db();
 $error = null;
-$stats = ['member' => 0, 'active' => 0, 'pending' => 0, 'news' => 0, 'agenda' => 0, 'aspiration' => 0, 'income' => 0, 'expense' => 0];
-$pendingMembers = [];
-$latestAspirations = [];
-$latestNews = [];
-$upcomingAgendas = [];
+
+$stats = [
+    'active' => 0, 'pending' => 0, 'published' => 0, 'draft' => 0,
+    'aspiration_new' => 0, 'aspiration_open' => 0, 'agenda_upcoming' => 0,
+    'income' => 0, 'expense' => 0,
+];
+$pendingList = [];
+$agendaList = [];
+$aspirationList = [];
+$growth = [];
+
+$monthStart = date('Y-m-01 00:00:00');
+$sixMonthsAgo = date('Y-m-01 00:00:00', strtotime('-5 months'));
 
 try {
-    $stats['member'] = (int) $pdo->query('SELECT COUNT(*) FROM `Member`')->fetchColumn();
     $stats['active'] = (int) $pdo->query("SELECT COUNT(*) FROM `Member` WHERE `status` = 'ACTIVE'")->fetchColumn();
     $stats['pending'] = (int) $pdo->query("SELECT COUNT(*) FROM `Member` WHERE `status` = 'PENDING'")->fetchColumn();
-    $stats['news'] = (int) $pdo->query('SELECT COUNT(*) FROM `News`')->fetchColumn();
-    $stats['agenda'] = (int) $pdo->query('SELECT COUNT(*) FROM `Agenda` WHERE `startsAt` >= NOW()')->fetchColumn();
-    $stats['aspiration'] = (int) $pdo->query("SELECT COUNT(*) FROM `Aspiration` WHERE `status` = 'NEW'")->fetchColumn();
-    $stats['income'] = (int) $pdo->query("SELECT COALESCE(SUM(`amount`),0) FROM `Finance` WHERE `type` = 'INCOME'")->fetchColumn();
-    $stats['expense'] = (int) $pdo->query("SELECT COALESCE(SUM(`amount`),0) FROM `Finance` WHERE `type` = 'EXPENSE'")->fetchColumn();
+    $stats['published'] = (int) $pdo->query("SELECT COUNT(*) FROM `News` WHERE `status` = 'PUBLISHED'")->fetchColumn();
+    $stats['draft'] = (int) $pdo->query("SELECT COUNT(*) FROM `News` WHERE `status` = 'DRAFT'")->fetchColumn();
+    $stats['aspiration_new'] = (int) $pdo->query("SELECT COUNT(*) FROM `Aspiration` WHERE `status` = 'NEW'")->fetchColumn();
+    $stats['aspiration_open'] = (int) $pdo->query("SELECT COUNT(*) FROM `Aspiration` WHERE `status` IN ('NEW','IN_PROGRESS')")->fetchColumn();
+    $stats['agenda_upcoming'] = (int) $pdo->query("SELECT COUNT(*) FROM `Agenda` WHERE `startsAt` >= NOW() AND `status` = 'SCHEDULED' AND `isPublished` = 1")->fetchColumn();
 
-    $pendingMembers = $pdo->query("SELECT m.id, u.name, m.district, m.createdAt FROM `Member` m JOIN `User` u ON u.id = m.userId WHERE m.status = 'PENDING' ORDER BY m.createdAt DESC LIMIT 5")->fetchAll();
-    $latestAspirations = $pdo->query("SELECT `trackingCode`, `name`, `subject`, `createdAt` FROM `Aspiration` WHERE `status` = 'NEW' ORDER BY `createdAt` DESC LIMIT 5")->fetchAll();
-    $latestNews = $pdo->query('SELECT `title`, `status`, `createdAt` FROM `News` ORDER BY `createdAt` DESC LIMIT 5')->fetchAll();
-    $upcomingAgendas = $pdo->query("SELECT `slug`, `title`, `location`, `startsAt` FROM `Agenda` WHERE `isPublished` = 1 AND `startsAt` >= NOW() ORDER BY `startsAt` ASC LIMIT 5")->fetchAll();
+    $stmt = $pdo->prepare("SELECT COALESCE(SUM(`amount`),0) FROM `Finance` WHERE `type` = 'INCOME' AND `date` >= ?");
+    $stmt->execute([$monthStart]);
+    $stats['income'] = (int) $stmt->fetchColumn();
+    $stmt = $pdo->prepare("SELECT COALESCE(SUM(`amount`),0) FROM `Finance` WHERE `type` = 'EXPENSE' AND `date` >= ?");
+    $stmt->execute([$monthStart]);
+    $stats['expense'] = (int) $stmt->fetchColumn();
+
+    $pendingList = $pdo->query("SELECT m.id, u.name, u.email, m.district, m.createdAt FROM `Member` m JOIN `User` u ON u.id = m.userId WHERE m.status = 'PENDING' ORDER BY m.createdAt DESC LIMIT 5")->fetchAll();
+    $agendaList = $pdo->query("SELECT `title`, `location`, `startsAt` FROM `Agenda` WHERE `startsAt` >= NOW() AND `status` = 'SCHEDULED' ORDER BY `startsAt` ASC LIMIT 3")->fetchAll();
+    $aspirationList = $pdo->query("SELECT `trackingCode`, `subject`, `status`, `createdAt` FROM `Aspiration` ORDER BY `createdAt` DESC LIMIT 5")->fetchAll();
+
+    $stmt = $pdo->prepare('SELECT `createdAt` FROM `Member` WHERE `createdAt` >= ?');
+    $stmt->execute([$sixMonthsAgo]);
+    $growth = $stmt->fetchAll(PDO::FETCH_COLUMN);
 } catch (Throwable $exception) {
     $error = $exception->getMessage();
 }
 
-$menu = [
-    ['Dashboard', 'index.php', true],
-    ['Anggota', '#anggota', false],
-    ['Berita', '#berita', false],
-    ['Agenda', '#agenda', false],
-    ['Aspirasi', '#aspirasi', false],
-    ['Keuangan', '#keuangan', false],
+$months = [];
+for ($i = 5; $i >= 0; $i--) {
+    $time = strtotime(date('Y-m-01') . " -{$i} months");
+    $key = date('Y-m', $time);
+    $count = 0;
+    $counts = [];
+    foreach ($growth as $created) {
+        $ym = substr((string) $created, 0, 7);
+        $counts[$ym] = ($counts[$ym] ?? 0) + 1;
+    }
+    $months[] = ['label' => date('M', $time), 'count' => $counts[$key] ?? 0];
+}
+$maxGrowth = 1;
+foreach ($months as $month) {
+    $maxGrowth = max($maxGrowth, $month['count']);
+}
+$balance = $stats['income'] - $stats['expense'];
+$firstName = explode(' ', trim((string) $user['name']))[0];
+$initials = strtoupper(substr($firstName, 0, 1)) . strtoupper(substr((string) ($user['name'] ?? 'A'), -1, 1));
+$roleLabel = $user['role'] === 'ADMIN' ? 'Administrator' : 'Editor';
+
+$nav = [
+    ['#ringkasan', 'Ringkasan', 'gauge', true, in_array($user['role'], ['ADMIN', 'EDITOR'], true)],
+    ['#anggota', 'Anggota', 'users', false, true],
+    ['#berita', 'Berita', 'newspaper', false, true],
+    ['#agenda', 'Agenda', 'calendar', false, true],
+    ['#galeri', 'Galeri', 'images', false, true],
+    ['#aspirasi', 'Aspirasi', 'message', false, true],
+    ['#persuratan', 'Persuratan', 'mail-open', false, $user['role'] === 'ADMIN'],
+    ['#keuangan', 'Keuangan', 'banknote', false, $user['role'] === 'ADMIN'],
+    ['#pengguna', 'Pengguna', 'user-square', false, $user['role'] === 'ADMIN'],
+    ['#pengaturan', 'Pengaturan', 'settings', false, $user['role'] === 'ADMIN'],
 ];
 ?>
 <!DOCTYPE html>
@@ -55,138 +98,164 @@ $menu = [
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Dashboard Admin — <?= e(setting($settings, 'site_name', APP_NAME)) ?></title>
-<style>
-:root{--navy:#0b2545;--blue:#0a3bc4;--muted:#5b6b82;--line:#dde5f0;--bg:#f1f4fa;--green:#0f7a3d;--red:#b42318;--gold:#b7791f}
-*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--navy);font-family:system-ui,Segoe UI,Roboto,Arial,sans-serif;line-height:1.5}
-a{color:var(--blue);text-decoration:none}
-.layout{display:grid;grid-template-columns:240px 1fr;min-height:100vh}
-aside{background:#081b33;color:#cfe0ff;padding:20px 16px;position:sticky;top:0;height:100vh}
-.brand{font-weight:800;color:#fff;font-size:17px;margin-bottom:6px}
-.brand small{display:block;color:#8fa9cc;font-weight:500;font-size:12px}
-nav.menu{display:grid;gap:4px;margin-top:20px}
-nav.menu a{padding:9px 12px;border-radius:8px;color:#cfe0ff;font-size:14px}
-nav.menu a.active,nav.menu a:hover{background:rgba(255,255,255,.1);color:#fff}
-main{padding:24px 28px}
-.top{display:flex;justify-content:space-between;align-items:center;gap:16px;margin-bottom:22px;flex-wrap:wrap}
-h1{font-size:22px;margin:0}.muted{color:var(--muted);font-size:13px;margin:4px 0 0}
-.btn{display:inline-block;padding:9px 14px;border-radius:8px;font-weight:700;font-size:13px;border:1px solid var(--line);background:#fff;color:var(--navy)}
-.btn-primary{background:var(--blue);color:#fff;border-color:var(--blue)}
-.cards{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:22px}
-.card{background:#fff;border:1px solid var(--line);border-radius:12px;padding:16px}
-.card .label{font-size:12px;color:var(--muted);font-weight:600}
-.card .value{font-size:24px;font-weight:800;margin-top:4px}
-.card .hint{font-size:12px;color:var(--muted);margin-top:2px}
-.panel{background:#fff;border:1px solid var(--line);border-radius:12px;padding:18px;margin-bottom:18px}
-.panel h2{font-size:15px;margin:0 0 12px}
-table{width:100%;border-collapse:collapse;font-size:13px}
-th{text-align:left;color:var(--muted);font-size:12px;padding:8px 6px;border-bottom:1px solid var(--line)}
-td{padding:9px 6px;border-bottom:1px solid #eef2f8}
-tr:last-child td{border-bottom:0}
-.chip{display:inline-block;padding:2px 8px;border-radius:999px;font-size:11px;font-weight:700}
-.chip.wait{background:#fff4e5;color:var(--gold)}.chip.ok{background:#e9f8ef;color:var(--green)}.chip.new{background:#e8efff;color:var(--blue)}
-.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:18px}
-.empty{color:var(--muted);font-size:13px;padding:8px 0}
-.alert{padding:12px 14px;border-radius:10px;font-size:13px;margin-bottom:16px;background:#fdecec;color:#a11a1a;border:1px solid #f5c2c2}
-@media(max-width:900px){.layout{grid-template-columns:1fr}aside{position:static;height:auto}.cards{grid-template-columns:repeat(2,1fr)}.grid-2{grid-template-columns:1fr}}
-</style>
+<title>Panel Admin — KNPI Morowali</title>
+<meta name="robots" content="noindex,nofollow">
+<link rel="icon" href="../images/logo.jpg">
+<link rel="stylesheet" href="../assets/app.css">
 </head>
-<body>
-<div class="layout">
-  <aside>
-    <div class="brand"><?= e(setting($settings, 'site_name', APP_NAME)) ?><small>Panel Admin</small></div>
-    <nav class="menu">
-      <?php foreach ($menu as [$label, $href, $active]): ?>
-        <a href="<?= e($href) ?>" class="<?= $active ? 'active' : '' ?>"><?= e($label) ?></a>
+<body class="min-h-screen bg-canvas">
+<div class="lg:pl-[250px]">
+  <aside class="fixed inset-y-0 left-0 z-50 hidden w-[250px] flex-col bg-navy text-white lg:flex" aria-label="Navigasi admin">
+    <div class="flex items-center justify-between gap-3 px-4 py-5">
+      <a href="index.php" class="flex items-center gap-2.5">
+        <span class="rounded-lg bg-white p-1"><img src="../images/logo.jpg" alt="Logo KNPI" width="120" height="72" class="h-8 w-12 object-contain"></span>
+        <span>
+          <span class="block text-sm font-extrabold leading-tight">KNPI Morowali</span>
+          <span class="block text-[11px] text-slate-400">Panel Admin</span>
+        </span>
+      </a>
+    </div>
+    <nav class="flex-1 space-y-1 overflow-y-auto px-3 pb-4">
+      <?php foreach ($nav as [$href, $label, $ico, $active, $allowed]): ?>
+        <?php if (!$allowed) continue; ?>
+        <a href="<?= e($href) ?>" class="flex items-center gap-2.5 rounded-xl px-3 py-2.5 text-sm font-semibold transition <?= $active ? 'bg-accent text-navy' : 'text-slate-300 hover:bg-white/10 hover:text-white' ?>">
+          <?= icon($ico, 'h-4 w-4 shrink-0') ?><?= e($label) ?>
+        </a>
       <?php endforeach; ?>
     </nav>
-    <nav class="menu" style="margin-top:24px">
-      <a href="../index.php">Lihat situs</a>
-      <a href="../logout.php">Keluar</a>
-    </nav>
+    <div class="border-t border-white/10 p-3">
+      <div class="mb-2 flex items-center gap-2 px-2">
+        <span class="flex h-9 w-9 items-center justify-center rounded-full bg-accent text-xs font-extrabold text-navy"><?= e(substr($initials, 0, 2)) ?></span>
+        <div class="min-w-0">
+          <div class="truncate text-xs font-bold"><?= e($user['name']) ?></div>
+          <div class="text-[10px] text-slate-400"><?= e($roleLabel) ?></div>
+        </div>
+      </div>
+      <a href="../index.php" class="flex items-center gap-2 rounded-lg px-3 py-2 text-xs text-slate-300 hover:bg-white/10"><?= icon('external', 'h-3.5 w-3.5') ?>Lihat situs publik</a>
+      <a href="../logout.php" class="flex items-center gap-2 rounded-lg px-3 py-2 text-xs text-slate-300 hover:bg-white/10"><?= icon('logout', 'h-3.5 w-3.5') ?>Keluar</a>
+    </div>
   </aside>
-  <main>
-    <div class="top">
-      <div><h1>Dashboard</h1><p class="muted">Masuk sebagai <?= e($user['name']) ?> (<?= e($user['role']) ?>)</p></div>
-      <a class="btn btn-primary" href="../index.php">+ Lihat beranda</a>
+
+  <div class="flex items-center justify-between gap-3 border-b border-line bg-white px-4 py-3 lg:hidden">
+    <a href="index.php" class="flex items-center gap-2"><img src="../images/logo.jpg" alt="Logo" class="h-8 w-12 object-contain"><span class="text-sm font-extrabold text-navy">Panel Admin</span></a>
+    <div class="flex items-center gap-2"><a href="../index.php" class="btn-outline min-h-9 px-3 text-xs">Situs</a><a href="../logout.php" class="btn-outline min-h-9 px-3 text-xs">Keluar</a></div>
+  </div>
+
+  <main id="ringkasan" class="px-4 py-6 sm:px-6 lg:px-8">
+    <div class="mb-6 flex flex-wrap items-end justify-between gap-3">
+      <div>
+        <h1 class="text-2xl font-extrabold tracking-tight text-navy">Ringkasan, <?= e($firstName) ?></h1>
+        <p class="mt-1 text-sm text-muted">Data per <?= e(tanggal(date('Y-m-d'))) ?> — DPD KNPI Kabupaten Morowali</p>
+      </div>
+      <div class="flex flex-wrap gap-2">
+        <a href="#berita" class="btn-primary"><?= icon('plus', 'h-4 w-4') ?>Tulis berita</a>
+        <a href="#agenda" class="btn-outline"><?= icon('calendar', 'h-4 w-4') ?>Agenda baru</a>
+      </div>
     </div>
 
-    <?php if ($error): ?><div class="alert"><?= e($error) ?></div><?php endif; ?>
+    <?php if ($error): ?><div class="mb-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-danger"><?= e($error) ?></div><?php endif; ?>
 
-    <div class="cards">
-      <div class="card"><div class="label">Anggota</div><div class="value"><?= number_format($stats['member'], 0, ',', '.') ?></div><div class="hint"><?= number_format($stats['active'], 0, ',', '.') ?> aktif · <?= number_format($stats['pending'], 0, ',', '.') ?> menunggu</div></div>
-      <div class="card"><div class="label">Berita</div><div class="value"><?= number_format($stats['news'], 0, ',', '.') ?></div><div class="hint">total tulisan</div></div>
-      <div class="card"><div class="label">Agenda</div><div class="value"><?= number_format($stats['agenda'], 0, ',', '.') ?></div><div class="hint">akan datang</div></div>
-      <div class="card"><div class="label">Aspirasi baru</div><div class="value"><?= number_format($stats['aspiration'], 0, ',', '.') ?></div><div class="hint">belum ditanggapi</div></div>
+    <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <div class="surface p-5"><div class="text-[13px] text-muted">Anggota aktif</div><div class="mt-1 text-3xl font-extrabold tracking-tight text-brand-600"><?= number_format($stats['active'], 0, ',', '.') ?></div><div class="mt-1 text-xs text-muted"><?= number_format($stats['pending'], 0, ',', '.') ?> menunggu verifikasi</div></div>
+      <div class="surface p-5"><div class="text-[13px] text-muted">Berita terbit</div><div class="mt-1 text-3xl font-extrabold tracking-tight text-brand-600"><?= number_format($stats['published'], 0, ',', '.') ?></div><div class="mt-1 text-xs text-muted"><?= number_format($stats['draft'], 0, ',', '.') ?> draf</div></div>
+      <div class="surface p-5"><div class="text-[13px] text-muted">Aspirasi baru</div><div class="mt-1 text-3xl font-extrabold tracking-tight text-warning"><?= number_format($stats['aspiration_new'], 0, ',', '.') ?></div><div class="mt-1 text-xs text-muted"><?= number_format($stats['aspiration_open'], 0, ',', '.') ?> belum selesai</div></div>
+      <div class="surface p-5"><div class="text-[13px] text-muted">Agenda mendatang</div><div class="mt-1 text-3xl font-extrabold tracking-tight text-success"><?= number_format($stats['agenda_upcoming'], 0, ',', '.') ?></div><div class="mt-1 text-xs text-muted">Terjadwal &amp; terbit</div></div>
     </div>
 
-    <div class="grid-2">
-      <div class="panel" id="anggota">
-        <h2>Menunggu verifikasi</h2>
-        <?php if (!$pendingMembers): ?><div class="empty">Tidak ada anggota menunggu.</div><?php endif; ?>
-        <?php if ($pendingMembers): ?>
-        <table><thead><tr><th>Nama</th><th>Kecamatan</th><th>Tanggal</th></tr></thead><tbody>
-          <?php foreach ($pendingMembers as $row): ?>
-            <tr><td><?= e($row['name']) ?></td><td><?= e($row['district']) ?></td><td><?= e(tanggal((string) $row['createdAt'])) ?></td></tr>
+    <div class="mt-5 grid gap-5 lg:grid-cols-[1.4fr_1fr]">
+      <section class="surface p-5">
+        <div class="flex items-center justify-between"><h2 class="font-extrabold text-navy">Pertumbuhan anggota (6 bulan)</h2><span class="text-xs text-muted">Berdasarkan tanggal daftar</span></div>
+        <div class="mt-6 flex h-52 items-end gap-4">
+          <?php foreach ($months as $month): ?>
+            <?php $height = max(4, (int) round(($month['count'] / $maxGrowth) * 100)); ?>
+            <div class="flex flex-1 flex-col items-center gap-2">
+              <div class="text-xs font-bold text-brand-600"><?= (int) $month['count'] ?></div>
+              <div class="flex h-40 w-full items-end rounded-lg bg-canvas"><div class="w-full rounded-lg bg-brand-600" style="height:<?= $height ?>%"></div></div>
+              <div class="text-xs text-muted"><?= e($month['label']) ?></div>
+            </div>
           <?php endforeach; ?>
-        </tbody></table>
+        </div>
+      </section>
+
+      <section class="surface p-5" id="agenda">
+        <div class="flex items-center justify-between"><h2 class="font-extrabold text-navy">Agenda mendatang</h2><a href="#agenda" class="text-xs font-bold text-brand-600 hover:underline">Kelola</a></div>
+        <div class="mt-4 space-y-2">
+          <?php if (!$agendaList): ?><p class="rounded-xl bg-canvas p-4 text-sm text-muted">Belum ada agenda mendatang.</p><?php endif; ?>
+          <?php foreach ($agendaList as $agenda): ?>
+            <div class="rounded-xl border border-line p-3">
+              <div class="text-sm font-bold text-navy"><?= e($agenda['title']) ?></div>
+              <div class="mt-1 text-xs text-muted"><?= e(tanggal((string) $agenda['startsAt'])) ?> · <?= e($agenda['location']) ?></div>
+            </div>
+          <?php endforeach; ?>
+        </div>
+      </section>
+    </div>
+
+    <div class="mt-5 grid gap-5 lg:grid-cols-[1.4fr_1fr]">
+      <section class="surface overflow-hidden" id="anggota">
+        <div class="flex items-center justify-between border-b border-line px-5 py-4">
+          <h2 class="font-extrabold text-navy">Pendaftar menunggu verifikasi</h2>
+          <a href="#anggota" class="text-xs font-bold text-brand-600 hover:underline">Lihat semua</a>
+        </div>
+        <div class="overflow-x-auto">
+          <table class="w-full min-w-[640px] border-collapse text-sm">
+            <thead><tr class="bg-canvas text-left text-xs font-bold uppercase tracking-wide text-muted"><th class="px-4 py-3">Nama</th><th class="px-4 py-3">Wilayah</th><th class="px-4 py-3">Tanggal daftar</th><th class="px-4 py-3"></th></tr></thead>
+            <tbody>
+              <?php if (!$pendingList): ?><tr><td colspan="4" class="px-4 py-8 text-center text-sm text-muted">Tidak ada pendaftar menunggu verifikasi.</td></tr><?php endif; ?>
+              <?php foreach ($pendingList as $member): ?>
+                <tr class="border-t border-line">
+                  <td class="px-4 py-3"><div class="font-semibold text-navy"><?= e($member['name']) ?></div><div class="text-xs text-muted"><?= e($member['email']) ?></div></td>
+                  <td class="px-4 py-3 text-muted"><?= e($member['district']) ?></td>
+                  <td class="whitespace-nowrap px-4 py-3 text-muted"><?= e(tanggal((string) $member['createdAt'])) ?></td>
+                  <td class="px-4 py-3"><a href="#anggota" class="btn-outline min-h-9 px-3 text-xs">Tinjau</a></td>
+                </tr>
+              <?php endforeach; ?>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <div class="space-y-5">
+        <section class="surface p-5" id="aspirasi">
+          <div class="flex items-center justify-between"><h2 class="font-extrabold text-navy">Aspirasi terbaru</h2><a href="#aspirasi" class="text-xs font-bold text-brand-600 hover:underline">Semua</a></div>
+          <div class="mt-4 space-y-3">
+            <?php if (!$aspirationList): ?><p class="rounded-xl bg-canvas p-4 text-sm text-muted">Belum ada aspirasi masuk.</p><?php endif; ?>
+            <?php foreach ($aspirationList as $aspiration): ?>
+              <?php
+                $tone = 'bg-canvas text-muted';
+                $label = $aspiration['status'];
+                if ($aspiration['status'] === 'NEW') { $tone = 'bg-amber-50 text-warning'; $label = 'Baru'; }
+                elseif ($aspiration['status'] === 'IN_PROGRESS') { $tone = 'bg-brand-50 text-brand-700'; $label = 'Diproses'; }
+                elseif ($aspiration['status'] === 'RESOLVED') { $tone = 'bg-emerald-50 text-success'; $label = 'Selesai'; }
+                elseif ($aspiration['status'] === 'REJECTED') { $tone = 'bg-red-50 text-danger'; $label = 'Ditolak'; }
+              ?>
+              <a href="#aspirasi" class="block rounded-xl border border-line p-3 hover:border-brand-200">
+                <div class="flex items-center justify-between gap-2">
+                  <span class="font-mono text-[10px] text-muted"><?= e($aspiration['trackingCode']) ?></span>
+                  <span class="badge <?= e($tone) ?>"><?= e($label) ?></span>
+                </div>
+                <div class="mt-1 line-clamp-2 text-sm font-semibold text-navy"><?= e($aspiration['subject']) ?></div>
+                <div class="mt-1 text-xs text-muted"><?= e(tanggal((string) $aspiration['createdAt'])) ?></div>
+              </a>
+            <?php endforeach; ?>
+          </div>
+        </section>
+
+        <?php if ($user['role'] === 'ADMIN'): ?>
+        <section class="surface p-5" id="keuangan">
+          <div class="flex items-center gap-2 text-navy"><?= icon('banknote', 'h-4 w-4 text-brand-600') ?><h2 class="font-extrabold">Keuangan bulan ini</h2></div>
+          <div class="mt-4 grid grid-cols-2 gap-3 text-sm">
+            <div class="rounded-xl bg-emerald-50 p-3"><div class="text-[11px] font-semibold uppercase text-success">Pemasukan</div><div class="mt-1 font-bold text-success"><?= e(rupiah($stats['income'])) ?></div></div>
+            <div class="rounded-xl bg-red-50 p-3"><div class="text-[11px] font-semibold uppercase text-danger">Pengeluaran</div><div class="mt-1 font-bold text-danger"><?= e(rupiah($stats['expense'])) ?></div></div>
+          </div>
+          <div class="mt-3 flex items-center justify-between rounded-xl border border-line p-3 text-sm"><span class="text-muted">Saldo bulan ini</span><span class="font-extrabold <?= $balance >= 0 ? 'text-success' : 'text-danger' ?>"><?= e(rupiah($balance)) ?></span></div>
+          <a href="#keuangan" class="btn-outline mt-3 w-full text-xs">Kelola keuangan <?= icon('arrow', 'h-3.5 w-3.5') ?></a>
+        </section>
         <?php endif; ?>
       </div>
-
-      <div class="panel" id="aspirasi">
-        <h2>Aspirasi terbaru</h2>
-        <?php if (!$latestAspirations): ?><div class="empty">Belum ada aspirasi baru.</div><?php endif; ?>
-        <?php if ($latestAspirations): ?>
-        <table><thead><tr><th>Kode</th><th>Subjek</th><th>Tanggal</th></tr></thead><tbody>
-          <?php foreach ($latestAspirations as $row): ?>
-            <tr><td><span class="chip new"><?= e($row['trackingCode']) ?></span></td><td><?= e($row['subject']) ?></td><td><?= e(tanggal((string) $row['createdAt'])) ?></td></tr>
-          <?php endforeach; ?>
-        </tbody></table>
-        <?php endif; ?>
-      </div>
     </div>
 
-    <div class="panel" id="agenda">
-      <h2>Agenda mendatang</h2>
-      <?php if (!$upcomingAgendas): ?><div class="empty">Belum ada agenda terjadwal.</div><?php endif; ?>
-      <?php if ($upcomingAgendas): ?>
-      <table><thead><tr><th>Judul</th><th>Lokasi</th><th>Tanggal</th></tr></thead><tbody>
-        <?php foreach ($upcomingAgendas as $row): ?>
-          <tr><td><?= e($row['title']) ?></td><td><?= e($row['location']) ?></td><td><?= e(tanggal((string) $row['startsAt'])) ?></td></tr>
-        <?php endforeach; ?>
-      </tbody></table>
-      <?php endif; ?>
-    </div>
-
-    <div class="grid-2">
-      <div class="panel" id="berita">
-        <h2>Berita terakhir</h2>
-        <?php if (!$latestNews): ?><div class="empty">Belum ada berita.</div><?php endif; ?>
-        <?php if ($latestNews): ?>
-        <table><thead><tr><th>Judul</th><th>Status</th><th>Tanggal</th></tr></thead><tbody>
-          <?php foreach ($latestNews as $row): ?>
-            <tr>
-              <td><?= e($row['title']) ?></td>
-              <td><?php $cls = $row['status'] === 'PUBLISHED' ? 'ok' : 'wait'; ?><span class="chip <?= e($cls) ?>"><?= e($row['status']) ?></span></td>
-              <td><?= e(tanggal((string) $row['createdAt'])) ?></td>
-            </tr>
-          <?php endforeach; ?>
-        </tbody></table>
-        <?php endif; ?>
-      </div>
-
-      <div class="panel" id="keuangan">
-        <h2>Ringkasan keuangan</h2>
-        <table>
-          <tbody>
-            <tr><td>Pemasukan</td><td style="text-align:right;font-weight:700;color:var(--green)"><?= e(rupiah($stats['income'])) ?></td></tr>
-            <tr><td>Pengeluaran</td><td style="text-align:right;font-weight:700;color:var(--red)"><?= e(rupiah($stats['expense'])) ?></td></tr>
-            <tr><td>Saldo</td><td style="text-align:right;font-weight:800"><?= e(rupiah($stats['income'] - $stats['expense'])) ?></td></tr>
-          </tbody>
-        </table>
-        <p class="empty" style="margin-top:10px">Detail transaksi menyusul di tahap berikutnya.</p>
-      </div>
-    </div>
+    <p class="mt-6 text-xs text-muted">Menu Anggota, Berita, Agenda, Galeri, dan lainnya masih ringkasan; halaman CRUD menyusul di tahap berikutnya.</p>
   </main>
 </div>
 </body>
