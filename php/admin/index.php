@@ -1,6 +1,6 @@
 <?php
 declare(strict_types=1);
-require dirname(__DIR__) . '/lib.php';
+require_once dirname(__DIR__) . '/lib.php';
 
 if (!config() || !is_installed()) {
     redirect('../install.php');
@@ -21,6 +21,7 @@ $stats = ['member' => 0, 'active' => 0, 'pending' => 0, 'news' => 0, 'agenda' =>
 $pendingMembers = [];
 $latestAspirations = [];
 $latestNews = [];
+$upcomingAgendas = [];
 
 try {
     $stats['member'] = (int) $pdo->query('SELECT COUNT(*) FROM `Member`')->fetchColumn();
@@ -35,6 +36,7 @@ try {
     $pendingMembers = $pdo->query("SELECT m.id, u.name, m.district, m.createdAt FROM `Member` m JOIN `User` u ON u.id = m.userId WHERE m.status = 'PENDING' ORDER BY m.createdAt DESC LIMIT 5")->fetchAll();
     $latestAspirations = $pdo->query("SELECT `trackingCode`, `name`, `subject`, `createdAt` FROM `Aspiration` WHERE `status` = 'NEW' ORDER BY `createdAt` DESC LIMIT 5")->fetchAll();
     $latestNews = $pdo->query('SELECT `title`, `status`, `createdAt` FROM `News` ORDER BY `createdAt` DESC LIMIT 5')->fetchAll();
+    $upcomingAgendas = $pdo->query("SELECT `slug`, `title`, `location`, `startsAt` FROM `Agenda` WHERE `isPublished` = 1 AND `startsAt` >= NOW() ORDER BY `startsAt` ASC LIMIT 5")->fetchAll();
 } catch (Throwable $exception) {
     $error = $exception->getMessage();
 }
@@ -142,6 +144,18 @@ tr:last-child td{border-bottom:0}
         </tbody></table>
         <?php endif; ?>
       </div>
+    </div>
+
+    <div class="panel" id="agenda">
+      <h2>Agenda mendatang</h2>
+      <?php if (!$upcomingAgendas): ?><div class="empty">Belum ada agenda terjadwal.</div><?php endif; ?>
+      <?php if ($upcomingAgendas): ?>
+      <table><thead><tr><th>Judul</th><th>Lokasi</th><th>Tanggal</th></tr></thead><tbody>
+        <?php foreach ($upcomingAgendas as $row): ?>
+          <tr><td><?= e($row['title']) ?></td><td><?= e($row['location']) ?></td><td><?= e(tanggal((string) $row['startsAt'])) ?></td></tr>
+        <?php endforeach; ?>
+      </tbody></table>
+      <?php endif; ?>
     </div>
 
     <div class="grid-2">
