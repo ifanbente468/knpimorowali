@@ -24,7 +24,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             throw new RuntimeException('Email dan kata sandi wajib diisi.');
         }
 
-        $stmt = db()->prepare('SELECT `id`, `passwordHash`, `isActive` FROM `User` WHERE `email` = ? LIMIT 1');
+        $stmt = db()->prepare('SELECT `id`, `passwordHash`, `isActive`, `role` FROM `User` WHERE `email` = ? LIMIT 1');
         $stmt->execute([$email]);
         $user = $stmt->fetch();
 
@@ -38,6 +38,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $update = db()->prepare('UPDATE `User` SET `lastLoginAt` = NOW(3) WHERE `id` = ?');
         $update->execute([$user['id']]);
 
+        if (in_array((string) $user['role'], ['ADMIN', 'EDITOR'], true)) {
+            redirect('admin/index.php');
+        }
         redirect('index.php');
     } catch (Throwable $exception) {
         $error = $exception->getMessage();

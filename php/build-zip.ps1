@@ -14,7 +14,7 @@ $files = @(
   'lib.php', 'theme.php', 'config.sample.php', '.htaccess',
   'CARA-UPLOAD.txt'
 )
-$dirs = @('images')
+$dirs = @('images', 'admin')
 
 if (Test-Path $outZip) { Remove-Item -LiteralPath $outZip -Force }
 
@@ -50,7 +50,7 @@ $verify = [System.IO.Compression.ZipFile]::OpenRead($outZip)
 try {
   $names = @($verify.Entries | ForEach-Object { $_.FullName })
   foreach ($n in $names) { if ($n.Contains('\')) { throw "Bad entry: $n" } }
-  foreach ($required in @('index.php', 'install.php', 'login.php', 'lib.php', 'theme.php', 'config.sample.php', '.htaccess', 'images/logo.jpg', 'images/hero.jpg')) {
+  foreach ($required in @('index.php', 'install.php', 'login.php', 'lib.php', 'theme.php', 'config.sample.php', '.htaccess', 'admin/index.php', 'images/logo.jpg', 'images/hero.jpg')) {
     if (-not ($names -contains $required)) { throw "Missing: $required" }
   }
   Write-Host ("Verified {0} entries." -f $names.Count)

@@ -94,6 +94,9 @@ button{margin-top:20px;width:100%;padding:12px;border:0;border-radius:9px;backgr
     <a href="index.php#organisasi">Organisasi</a>
     <a href="index.php#galeri">Galeri</a>
     <?php if ($user): ?>
+      <?php if (in_array($user['role'], ['ADMIN', 'EDITOR'], true)): ?>
+        <a href="admin/index.php" class="btn btn-outline">Dashboard</a>
+      <?php endif; ?>
       <a href="logout.php" class="btn btn-outline">Keluar</a>
     <?php else: ?>
       <a href="login.php" class="btn btn-primary">Masuk</a>
