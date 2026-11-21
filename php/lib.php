@@ -165,3 +165,58 @@ function image_src(string $value): string
     }
     return str_starts_with($value, 'http') ? $value : '/' . ltrim($value, '/');
 }
+
+function tracking_code(): string
+{
+    return 'ASP-' . strtoupper(substr(bin2hex(random_bytes(4)), 0, 8));
+}
+
+function upload_file(string $field, string $subdir, array $allowed = ['jpg', 'jpeg', 'png', 'webp', 'pdf'], int $maxBytes = 5242880): ?string
+{
+    if (empty($_FILES[$field]) || ($_FILES[$field]['error'] ?? UPLOAD_ERR_NO_FILE) === UPLOAD_ERR_NO_FILE) {
+        return null;
+    }
+    $file = $_FILES[$field];
+    if (($file['error'] ?? UPLOAD_ERR_OK) !== UPLOAD_ERR_OK) {
+        throw new RuntimeException('Upload gagal (kode ' . (int) $file['error'] . ').');
+    }
+    if (($file['size'] ?? 0) > $maxBytes) {
+        throw new RuntimeException('Ukuran file maksimal ' . round($maxBytes / 1048576, 1) . ' MB.');
+    }
+    $ext = strtolower(pathinfo((string) $file['name'], PATHINFO_EXTENSION));
+    if (!in_array($ext, $allowed, true)) {
+        throw new RuntimeException('Tipe file tidak diizinkan. Gunakan: ' . implode(', ', $allowed) . '.');
+    }
+    if (!is_uploaded_file((string) $file['tmp_name'])) {
+        throw new RuntimeException('File upload tidak valid.');
+    }
+    $subdir = trim(preg_replace('/[^a-z0-9_-]/i', '', $subdir) ?? 'misc', '/');
+    $dir = dirname(__DIR__) . '/uploads/' . $subdir;
+    if (!is_dir($dir) && !@mkdir($dir, 0755, true)) {
+        throw new RuntimeException('Folder upload tidak dapat dibuat.');
+    }
+    $name = date('Ymd') . '-' . bin2hex(random_bytes(8)) . '.' . $ext;
+    if (!move_uploaded_file((string) $file['tmp_name'], $dir . '/' . $name)) {
+        throw new RuntimeException('Gagal menyimpan file upload.');
+    }
+    return '/uploads/' . $subdir . '/' . $name;
+}
+
+function new_id(): string
+{
+    return 'c' . bin2hex(random_bytes(12));
+}
+
+function badge_for(string $value): string
+{
+    $map = [
+        'PUBLISHED' => 'bg-emerald-50 text-success', 'DRAFT' => 'bg-amber-50 text-warning', 'ARCHIVED' => 'bg-canvas text-muted',
+        'ACTIVE' => 'bg-emerald-50 text-success', 'PENDING' => 'bg-amber-50 text-warning', 'REJECTED' => 'bg-red-50 text-danger', 'SUSPENDED' => 'bg-canvas text-muted',
+        'NEW' => 'bg-amber-50 text-warning', 'IN_PROGRESS' => 'bg-brand-50 text-brand-700', 'RESOLVED' => 'bg-emerald-50 text-success',
+        'INCOME' => 'bg-emerald-50 text-success', 'EXPENSE' => 'bg-red-50 text-danger',
+        'RECEIVED' => 'bg-brand-50 text-brand-700', 'PROCESSED' => 'bg-brand-50 text-brand-700', 'ARCHIVED_LETTER' => 'bg-canvas text-muted',
+        'SCHEDULED' => 'bg-brand-50 text-brand-700', 'COMPLETED' => 'bg-emerald-50 text-success', 'CANCELLED' => 'bg-red-50 text-danger',
+        'OKP' => 'bg-brand-50 text-brand-700', 'SAYAP' => 'bg-yellow-100 text-navy', 'DPD' => 'bg-canvas text-muted',
+    ];
+    return 'badge ' . ($map[$value] ?? 'bg-canvas text-muted');
+}

@@ -43,6 +43,7 @@ function page_header(string $title, array $settings = []): void
         ['/berita', 'Berita'],
         ['/agenda', 'Agenda'],
         ['/galeri', 'Galeri'],
+        ['/aspirasi', 'Aspirasi'],
     ];
     $currentPath = rtrim((string) parse_url((string) ($_SERVER['REQUEST_URI'] ?? '/'), PHP_URL_PATH), '/');
     if ($currentPath === '') {
@@ -88,7 +89,7 @@ function page_header(string $title, array $settings = []): void
         <a href="logout.php" class="btn-ghost">Keluar</a>
       <?php else: ?>
         <a href="/login.php" class="btn-ghost">Masuk</a>
-        <a href="index.php#aspirasi" class="btn-accent">Kirim Aspirasi</a>
+        <a href="/aspirasi" class="btn-accent">Kirim Aspirasi</a>
       <?php endif; ?>
     </div>
 
@@ -135,8 +136,9 @@ function page_footer(array $settings = []): void
       <div class="text-sm font-bold uppercase tracking-wider text-accent">Layanan</div>
       <ul class="mt-4 space-y-2 text-sm text-slate-300">
         <li><a href="/login.php" class="hover:text-white">Masuk / Akun</a></li>
-        <li><a href="index.php#aspirasi" class="hover:text-white">Kirim Aspirasi</a></li>
-        <li><a href="install.php" class="hover:text-white">Instalasi</a></li>
+        <li><a href="/anggota/daftar" class="hover:text-white">Daftar Anggota</a></li>
+        <li><a href="/anggota/cek" class="hover:text-white">Cek Kartu Anggota</a></li>
+        <li><a href="/aspirasi" class="hover:text-white">Kirim Aspirasi</a></li>
       </ul>
     </div>
   </div>

@@ -10,11 +10,11 @@ $src = $PSScriptRoot
 $outZip = Join-Path $root 'knpi-php-upload.zip'
 
 $files = @(
-  'index.php', 'login.php', 'logout.php', 'install.php', 'berita.php', 'agenda.php', 'galeri.php', 'organisasi.php', 'profil.php', 'akun.php',
+  'index.php', 'login.php', 'logout.php', 'install.php', 'berita.php', 'agenda.php', 'galeri.php', 'organisasi.php', 'profil.php', 'akun.php', 'aspirasi.php', 'lacak.php',
   'lib.php', 'theme.php', 'config.sample.php', '.htaccess',
   'CARA-UPLOAD.txt'
 )
-$dirs = @('images', 'admin', 'assets')
+$dirs = @('images', 'admin', 'assets', 'anggota', 'uploads')
 
 if (Test-Path $outZip) { Remove-Item -LiteralPath $outZip -Force }
 
@@ -50,7 +50,7 @@ $verify = [System.IO.Compression.ZipFile]::OpenRead($outZip)
 try {
   $names = @($verify.Entries | ForEach-Object { $_.FullName })
   foreach ($n in $names) { if ($n.Contains('\')) { throw "Bad entry: $n" } }
-  foreach ($required in @('index.php', 'install.php', 'login.php', 'lib.php', 'theme.php', 'config.sample.php', '.htaccess', 'admin/index.php', 'assets/app.css', 'images/logo.jpg', 'images/hero.jpg')) {
+  foreach ($required in @('index.php', 'install.php', 'login.php', 'lib.php', 'theme.php', 'config.sample.php', '.htaccess', 'admin/index.php', 'anggota/daftar.php', 'anggota/cek.php', 'assets/app.css', 'uploads/.htaccess', 'images/logo.jpg', 'images/hero.jpg')) {
     if (-not ($names -contains $required)) { throw "Missing: $required" }
   }
   Write-Host ("Verified {0} entries." -f $names.Count)

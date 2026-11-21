@@ -7,6 +7,7 @@ $modules = [
         'table' => 'News', 'label' => 'Berita', 'owner' => 'authorId', 'updated' => true,
         'order' => 'createdAt DESC',
         'list' => ['title' => 'Judul', 'category' => 'Kategori', 'status' => 'Status', 'createdAt' => 'Dibuat'],
+        'files' => ['coverImage' => ['dir' => 'news', 'label' => 'Upload gambar sampul', 'types' => ['jpg', 'jpeg', 'png', 'webp']]],
         'fields' => [
             'title' => ['label' => 'Judul', 'type' => 'text', 'required' => true],
             'slug' => ['label' => 'Slug', 'type' => 'text', 'hint' => 'Kosongkan untuk otomatis dari judul'],
@@ -38,6 +39,7 @@ $modules = [
         'table' => 'GalleryItem', 'label' => 'Galeri', 'owner' => 'createdById', 'updated' => false,
         'order' => 'createdAt DESC',
         'list' => ['title' => 'Judul', 'album' => 'Album', 'sortOrder' => 'Urutan', 'createdAt' => 'Dibuat'],
+        'files' => ['imageUrl' => ['dir' => 'gallery', 'label' => 'Upload foto', 'types' => ['jpg', 'jpeg', 'png', 'webp']]],
         'fields' => [
             'title' => ['label' => 'Judul', 'type' => 'text', 'required' => true],
             'album' => ['label' => 'Album', 'type' => 'text', 'required' => true],
@@ -50,6 +52,7 @@ $modules = [
         'table' => 'Letter', 'label' => 'Persuratan', 'owner' => 'createdById', 'updated' => true, 'adminOnly' => true,
         'order' => 'date DESC',
         'list' => ['number' => 'Nomor', 'subject' => 'Perihal', 'type' => 'Jenis', 'status' => 'Status', 'date' => 'Tanggal'],
+        'files' => ['fileUrl' => ['dir' => 'letters', 'label' => 'Upload berkas surat', 'types' => ['pdf', 'jpg', 'jpeg', 'png']]],
         'fields' => [
             'number' => ['label' => 'Nomor surat', 'type' => 'text', 'required' => true],
             'type' => ['label' => 'Jenis', 'type' => 'select', 'options' => ['INCOMING' => 'Masuk', 'OUTGOING' => 'Keluar']],
@@ -79,6 +82,7 @@ $modules = [
         'table' => 'Organization', 'label' => 'Organisasi', 'owner' => 'createdById', 'updated' => true, 'adminOnly' => true,
         'order' => 'sortOrder ASC, name ASC',
         'list' => ['name' => 'Nama', 'type' => 'Jenis', 'leader' => 'Ketua', 'isActive' => 'Aktif'],
+        'files' => ['logoUrl' => ['dir' => 'organisasi', 'label' => 'Upload logo', 'types' => ['jpg', 'jpeg', 'png', 'webp']]],
         'fields' => [
             'name' => ['label' => 'Nama organisasi', 'type' => 'text', 'required' => true],
             'type' => ['label' => 'Jenis', 'type' => 'select', 'options' => ['DPD' => 'DPD', 'OKP' => 'OKP', 'SAYAP' => 'Sayap']],
@@ -97,6 +101,7 @@ $modules = [
         'table' => 'User', 'label' => 'Pengguna', 'owner' => null, 'updated' => true, 'adminOnly' => true,
         'order' => 'createdAt DESC',
         'list' => ['name' => 'Nama', 'email' => 'Email', 'role' => 'Peran', 'isActive' => 'Aktif'],
+        'files' => ['avatarUrl' => ['dir' => 'members', 'label' => 'Upload foto profil', 'types' => ['jpg', 'jpeg', 'png', 'webp']]],
         'fields' => [
             'name' => ['label' => 'Nama', 'type' => 'text', 'required' => true],
             'email' => ['label' => 'Email', 'type' => 'text', 'required' => true],
@@ -179,6 +184,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $data[$name] = $value === '' ? null : $value;
         }
 
+        foreach (($module['files'] ?? []) as $column => $fileConfig) {
+            $uploaded = upload_file('file_' . $column, $fileConfig['dir'], $fileConfig['types']);
+            if ($uploaded !== null) {
+                $data[$column] = $uploaded;
+            }
+        }
+
         if ($key === 'berita' && empty($data['slug'])) {
             $data['slug'] = slugify((string) ($data['title'] ?? ''));
         }
@@ -255,7 +267,7 @@ if ($action === 'edit' || $action === 'new') {
       <div><h1 class="text-2xl font-extrabold tracking-tight text-navy"><?= $action === 'edit' ? 'Edit' : 'Tambah' ?> <?= e($module['label']) ?></h1><p class="mt-1 text-sm text-muted">Isi data lalu simpan.</p></div>
       <a href="crud.php?m=<?= e($key) ?>" class="btn-outline">Kembali</a>
     </div>
-    <form method="post" class="surface max-w-3xl p-6">
+    <form method="post" enctype="multipart/form-data" class="surface max-w-3xl p-6">
       <input type="hidden" name="csrf" value="<?= e(csrf_token()) ?>">
       <input type="hidden" name="op" value="save">
       <input type="hidden" name="id" value="<?= e((string) ($editing['id'] ?? '')) ?>">
@@ -285,6 +297,13 @@ if ($action === 'edit' || $action === 'new') {
             <input class="input" type="<?= e($type) ?>" id="f-<?= e($name) ?>" name="<?= e($name) ?>" value="<?= e((string) $value) ?>" <?= $required ? 'required' : '' ?>>
           <?php endif; ?>
           <?php if (!empty($field['hint'])): ?><p class="mt-1 text-xs text-muted"><?= e($field['hint']) ?></p><?php endif; ?>
+        </div>
+      <?php endforeach; ?>
+      <?php foreach (($module['files'] ?? []) as $column => $fileConfig): ?>
+        <div class="mb-4">
+          <label class="label" for="f-file-<?= e($column) ?>"><?= e($fileConfig['label']) ?></label>
+          <input class="input" type="file" id="f-file-<?= e($column) ?>" name="file_<?= e($column) ?>" accept="<?= e(implode(',', array_map(fn ($t) => '.' . $t, $fileConfig['types']))) ?>">
+          <p class="mt-1 text-xs text-muted">Kosongkan bila tidak ingin mengganti. Maks 5 MB.</p>
         </div>
       <?php endforeach; ?>
       <div class="flex gap-2"><button type="submit" class="btn-primary">Simpan</button><a href="crud.php?m=<?= e($key) ?>" class="btn-outline">Batal</a></div>

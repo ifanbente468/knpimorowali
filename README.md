@@ -10,12 +10,15 @@ Tidak membutuhkan Node.js di server; seluruh isi folder `php/` diekstrak ke `pub
 - Berita: daftar, pencarian, halaman detail `/berita/<slug>`
 - Agenda: daftar + detail `/agenda/<slug>`
 - Galeri dengan filter album, organisasi, profil
+- Aspirasi publik `/aspirasi` + lacak `/aspirasi/lacak`
+- Pendaftaran anggota `/anggota/daftar`, cek kartu + QR `/anggota/cek`
 - Login anggota `/login.php` → akun `/akun.php`
 - Redirect otomatis ke `/install.php` sebelum terpasang
 
 **Admin** (`/admin/login.php`)
 - Dashboard statistik, grafik pertumbuhan, aspirasi, keuangan
 - CRUD: berita, agenda, galeri, persuratan, keuangan, organisasi, pengguna
+- Upload file: sampul berita, foto galeri, berkas surat, logo, foto profil
 - Verifikasi anggota (setujui/tolak/tangguhkan), tanggapan aspirasi
 - Pengaturan identitas situs, kontak, media sosial
 

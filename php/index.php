@@ -65,8 +65,8 @@ page_header('Beranda', $settings);
         ikuti kegiatan, dan sampaikan aspirasi dalam satu platform.
       </p>
       <div class="mt-8 flex flex-wrap gap-3">
-        <a href="/login.php" class="btn-accent px-6">Kirim Aspirasi <?= icon('arrow', 'h-4 w-4') ?></a>
-        <a href="/login.php" class="btn border border-white/25 bg-white/5 px-6 text-white hover:bg-white/10">Masuk Anggota</a>
+        <a href="/anggota/daftar" class="btn-accent px-6">Daftar Jadi Anggota <?= icon('arrow', 'h-4 w-4') ?></a>
+        <a href="/anggota/cek" class="btn border border-white/25 bg-white/5 px-6 text-white hover:bg-white/10">Cek Kartu Anggota</a>
       </div>
       <div class="mt-8 flex flex-wrap items-center gap-x-6 gap-y-2 text-xs text-slate-300">
         <span class="flex items-center gap-1.5"><?= icon('check', 'h-4 w-4 text-accent') ?>Pendaftaran gratis</span>
@@ -239,7 +239,7 @@ page_header('Beranda', $settings);
         <h2 class="mt-2 max-w-2xl text-2xl font-extrabold sm:text-3xl">Punya aspirasi untuk pemuda Morowali?</h2>
         <p class="mt-2 max-w-xl text-sm text-brand-100">Sampaikan langsung ke DPD KNPI Kabupaten Morowali. Setiap aspirasi dicatat dan ditindaklanjuti oleh pengurus.</p>
       </div>
-      <a href="/login.php" class="btn-accent px-6">Masuk untuk kirim <?= icon('arrow', 'h-4 w-4') ?></a>
+      <a href="/aspirasi" class="btn-accent px-6">Kirim Aspirasi <?= icon('arrow', 'h-4 w-4') ?></a>
     </div>
   </div>
 </section>

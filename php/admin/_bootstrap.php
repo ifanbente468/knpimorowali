@@ -54,11 +54,6 @@ function require_post_csrf(): void
     }
 }
 
-function new_id(): string
-{
-    return 'c' . bin2hex(random_bytes(12));
-}
-
 function slugify(string $value): string
 {
     $value = strtolower(trim($value));
@@ -141,16 +136,4 @@ function admin_footer(): void
 </body>
 </html>
 <?php
-}
-
-function badge_for(string $value): string
-{
-    $map = [
-        'PUBLISHED' => 'bg-emerald-50 text-success', 'DRAFT' => 'bg-amber-50 text-warning', 'ARCHIVED' => 'bg-canvas text-muted',
-        'ACTIVE' => 'bg-emerald-50 text-success', 'PENDING' => 'bg-amber-50 text-warning', 'REJECTED' => 'bg-red-50 text-danger', 'SUSPENDED' => 'bg-canvas text-muted',
-        'NEW' => 'bg-amber-50 text-warning', 'IN_PROGRESS' => 'bg-brand-50 text-brand-700', 'RESOLVED' => 'bg-emerald-50 text-success',
-        'INCOME' => 'bg-emerald-50 text-success', 'EXPENSE' => 'bg-red-50 text-danger',
-        'RECEIVED' => 'bg-brand-50 text-brand-700', 'SENT' => 'bg-emerald-50 text-success', 'ARCHIVED_LETTER' => 'bg-canvas text-muted',
-    ];
-    return 'badge ' . ($map[$value] ?? 'bg-canvas text-muted');
 }
