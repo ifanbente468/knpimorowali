@@ -38,10 +38,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $update = db()->prepare('UPDATE `User` SET `lastLoginAt` = NOW(3) WHERE `id` = ?');
         $update->execute([$user['id']]);
 
-        if (in_array((string) $user['role'], ['ADMIN', 'EDITOR'], true)) {
-            redirect('admin/index.php');
+        if ((string) $user['role'] !== 'MEMBER') {
+            throw new RuntimeException('Akun staf/admin harus masuk lewat halaman /admin/login.php');
         }
-        redirect('index.php');
+        redirect('/akun.php');
     } catch (Throwable $exception) {
         $error = $exception->getMessage();
     }
@@ -51,8 +51,8 @@ page_header('Masuk', $settings);
 ?>
 <section class="container-page py-16">
   <div class="mx-auto w-full max-w-md surface p-7">
-    <h1 class="text-2xl font-extrabold text-navy">Masuk</h1>
-    <p class="mt-1 text-sm text-muted">Gunakan akun admin yang dibuat saat instalasi.</p>
+    <h1 class="text-2xl font-extrabold text-navy">Masuk Anggota</h1>
+    <p class="mt-1 text-sm text-muted">Gunakan akun anggota Anda. Admin/editor masuk lewat /admin/login.php.</p>
     <?php if ($error): ?><div class="mt-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-danger"><?= e($error) ?></div><?php endif; ?>
     <form method="post" class="mt-5">
       <input type="hidden" name="csrf" value="<?= e(csrf_token()) ?>">

@@ -163,3 +163,11 @@ function rupiah(int|float $value): string
 {
     return 'Rp ' . number_format((float) $value, 0, ',', '.');
 }
+
+function image_src(string $value): string
+{
+    if ($value === '') {
+        return '/images/hero.jpg';
+    }
+    return str_starts_with($value, 'http') ? $value : '/' . ltrim($value, '/');
+}

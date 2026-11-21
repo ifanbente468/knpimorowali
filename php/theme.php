@@ -37,12 +37,17 @@ function page_header(string $title, array $settings = []): void
     $tagline = setting($settings, 'site_tagline', 'Pemuda Morowali Bergerak, Berkarya, Berdaya.');
     $user = current_user();
     $nav = [
-        ['index.php', 'Beranda', true],
-        ['index.php#berita', 'Berita', false],
-        ['index.php#agenda', 'Agenda', false],
-        ['index.php#organisasi', 'Organisasi', false],
-        ['index.php#galeri', 'Galeri', false],
+        ['/', 'Beranda'],
+        ['/profil', 'Profil'],
+        ['/organisasi', 'Organisasi'],
+        ['/berita', 'Berita'],
+        ['/agenda', 'Agenda'],
+        ['/galeri', 'Galeri'],
     ];
+    $currentPath = rtrim((string) parse_url((string) ($_SERVER['REQUEST_URI'] ?? '/'), PHP_URL_PATH), '/');
+    if ($currentPath === '') {
+        $currentPath = '/';
+    }
     ?>
 <!DOCTYPE html>
 <html lang="id">
@@ -51,16 +56,16 @@ function page_header(string $title, array $settings = []): void
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title><?= e($title) ?> — <?= e($siteName) ?></title>
 <meta name="description" content="<?= e($tagline) ?>">
-<link rel="icon" href="images/logo.jpg">
-<link rel="stylesheet" href="assets/app.css">
+<link rel="icon" href="/images/logo.jpg">
+<link rel="stylesheet" href="/assets/app.css">
 </head>
 <body>
 <a href="#konten" class="skip-link">Lewati ke konten utama</a>
 <header class="sticky top-0 z-40 border-b border-line bg-white/95 backdrop-blur">
   <div class="container-page flex h-[76px] items-center justify-between gap-4">
-    <a href="index.php" class="flex shrink-0 items-center gap-3" aria-label="<?= e($siteName) ?> beranda">
+    <a href="/" class="flex shrink-0 items-center gap-3" aria-label="<?= e($siteName) ?> beranda">
       <span class="flex h-12 w-[72px] items-center justify-center rounded-lg border border-line bg-white p-1">
-        <img src="images/logo.jpg" alt="Logo KNPI" class="h-full w-full object-contain" width="120" height="72">
+        <img src="/images/logo.jpg" alt="Logo KNPI" class="h-full w-full object-contain" width="120" height="72">
       </span>
       <span class="hidden sm:block">
         <span class="block text-sm font-extrabold leading-tight text-navy"><?= e($siteName) ?></span>
@@ -69,7 +74,8 @@ function page_header(string $title, array $settings = []): void
     </a>
 
     <nav aria-label="Navigasi utama" class="hidden items-center gap-1 lg:flex">
-      <?php foreach ($nav as [$href, $label, $active]): ?>
+      <?php foreach ($nav as [$href, $label]): ?>
+        <?php $active = $href === '/' ? $currentPath === '/' : str_starts_with($currentPath, $href); ?>
         <a href="<?= e($href) ?>" class="rounded-lg px-3 py-2 text-sm font-semibold transition <?= $active ? 'bg-brand-50 text-brand-700' : 'text-navy hover:bg-canvas hover:text-brand-600' ?>"><?= e($label) ?></a>
       <?php endforeach; ?>
     </nav>
@@ -81,12 +87,12 @@ function page_header(string $title, array $settings = []): void
         <?php endif; ?>
         <a href="logout.php" class="btn-ghost">Keluar</a>
       <?php else: ?>
-        <a href="login.php" class="btn-ghost">Masuk</a>
+        <a href="/login.php" class="btn-ghost">Masuk</a>
         <a href="index.php#aspirasi" class="btn-accent">Kirim Aspirasi</a>
       <?php endif; ?>
     </div>
 
-    <a href="login.php" class="btn-outline lg:hidden">Masuk</a>
+    <a href="/login.php" class="btn-outline lg:hidden">Masuk</a>
   </div>
 </header>
 <main id="konten">
@@ -118,17 +124,17 @@ function page_footer(array $settings = []): void
     <div>
       <div class="text-sm font-bold uppercase tracking-wider text-accent">Tautan</div>
       <ul class="mt-4 space-y-2 text-sm text-slate-300">
-        <li><a href="index.php" class="hover:text-white">Beranda</a></li>
-        <li><a href="index.php#berita" class="hover:text-white">Berita</a></li>
-        <li><a href="index.php#agenda" class="hover:text-white">Agenda</a></li>
-        <li><a href="index.php#organisasi" class="hover:text-white">OKP &amp; Sayap</a></li>
-        <li><a href="index.php#galeri" class="hover:text-white">Galeri</a></li>
+        <li><a href="/" class="hover:text-white">Beranda</a></li>
+        <li><a href="/berita" class="hover:text-white">Berita</a></li>
+        <li><a href="/agenda" class="hover:text-white">Agenda</a></li>
+        <li><a href="/organisasi" class="hover:text-white">OKP &amp; Sayap</a></li>
+        <li><a href="/galeri" class="hover:text-white">Galeri</a></li>
       </ul>
     </div>
     <div>
       <div class="text-sm font-bold uppercase tracking-wider text-accent">Layanan</div>
       <ul class="mt-4 space-y-2 text-sm text-slate-300">
-        <li><a href="login.php" class="hover:text-white">Masuk / Akun</a></li>
+        <li><a href="/login.php" class="hover:text-white">Masuk / Akun</a></li>
         <li><a href="index.php#aspirasi" class="hover:text-white">Kirim Aspirasi</a></li>
         <li><a href="install.php" class="hover:text-white">Instalasi</a></li>
       </ul>

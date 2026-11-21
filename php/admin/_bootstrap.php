@@ -8,10 +8,10 @@ if (!config() || !is_installed()) {
 }
 $user = current_user();
 if (!$user) {
-    redirect('../login.php');
+    redirect('login.php');
 }
 if (!in_array($user['role'], ['ADMIN', 'EDITOR'], true)) {
-    redirect('../index.php');
+    redirect('../akun.php');
 }
 
 function is_admin(): bool

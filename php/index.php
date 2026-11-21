@@ -45,14 +45,6 @@ $chairmanName = setting($settings, 'chairman_name', '');
 $chairmanTitle = setting($settings, 'chairman_title', 'Ketua DPD KNPI Kabupaten Morowali');
 $heroImage = image_src(setting($settings, 'hero_image', '/images/hero.jpg'));
 
-function image_src(string $value): string
-{
-    if ($value === '') {
-        return 'images/hero.jpg';
-    }
-    return str_starts_with($value, 'http') ? $value : ltrim($value, '/');
-}
-
 function jam_wita(string $value): string
 {
     $time = strtotime($value);
@@ -79,8 +71,8 @@ page_header('Beranda', $settings);
         ikuti kegiatan, dan sampaikan aspirasi dalam satu platform.
       </p>
       <div class="mt-8 flex flex-wrap gap-3">
-        <a href="#aspirasi" class="btn-accent px-6">Kirim Aspirasi <?= icon('arrow', 'h-4 w-4') ?></a>
-        <a href="login.php" class="btn border border-white/25 bg-white/5 px-6 text-white hover:bg-white/10">Masuk Anggota</a>
+        <a href="/login.php" class="btn-accent px-6">Kirim Aspirasi <?= icon('arrow', 'h-4 w-4') ?></a>
+        <a href="/login.php" class="btn border border-white/25 bg-white/5 px-6 text-white hover:bg-white/10">Masuk Anggota</a>
       </div>
       <div class="mt-8 flex flex-wrap items-center gap-x-6 gap-y-2 text-xs text-slate-300">
         <span class="flex items-center gap-1.5"><?= icon('check', 'h-4 w-4 text-accent') ?>Pendaftaran gratis</span>
@@ -120,14 +112,14 @@ page_header('Beranda', $settings);
       <h2 class="text-2xl font-extrabold tracking-tight text-navy sm:text-3xl">Berita &amp; kegiatan pemuda</h2>
       <p class="mt-2 max-w-2xl text-sm text-muted">Informasi resmi kegiatan, pernyataan organisasi, dan capaian pemuda Morowali.</p>
     </div>
-    <a href="#berita" class="btn-outline">Lihat semua <?= icon('arrow', 'h-4 w-4') ?></a>
+    <a href="/berita" class="btn-outline">Lihat semua <?= icon('arrow', 'h-4 w-4') ?></a>
   </div>
 
   <?php if ($error): ?><div class="mb-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-danger"><?= e($error) ?></div><?php endif; ?>
 
   <?php if ($featured): ?>
     <div class="grid gap-5 lg:grid-cols-[1.35fr_0.65fr]">
-      <a href="#berita" class="group relative overflow-hidden rounded-2xl bg-navy text-white shadow-card">
+      <a href="/berita/<?= e($featured['slug']) ?>" class="group relative overflow-hidden rounded-2xl bg-navy text-white shadow-card">
         <div class="relative aspect-[16/9] w-full">
           <img src="<?= e(image_src((string) ($featured['coverImage'] ?? ''))) ?>" alt="<?= e($featured['title']) ?>" class="h-full w-full object-cover transition duration-500 group-hover:scale-105">
           <div class="absolute inset-0 bg-gradient-to-t from-navy via-navy/55 to-transparent"></div>
@@ -143,7 +135,7 @@ page_header('Beranda', $settings);
       <div class="grid gap-4">
         <?php if ($rest): ?>
           <?php foreach ($rest as $item): ?>
-            <a href="#berita" class="surface group flex gap-4 p-4 transition hover:border-brand-200">
+            <a href="/berita/<?= e($item['slug']) ?>" class="surface group flex gap-4 p-4 transition hover:border-brand-200">
               <div class="relative h-24 w-24 shrink-0 overflow-hidden rounded-xl">
                 <img src="<?= e(image_src((string) ($item['coverImage'] ?? ''))) ?>" alt="" class="h-full w-full object-cover transition duration-300 group-hover:scale-105">
               </div>
@@ -172,13 +164,13 @@ page_header('Beranda', $settings);
           <div class="mb-1 text-xs font-bold uppercase tracking-[0.18em] text-brand-600">Agenda</div>
           <h2 class="text-2xl font-extrabold tracking-tight text-navy sm:text-3xl">Kegiatan terdekat</h2>
         </div>
-        <a href="#agenda" class="text-sm font-bold text-brand-600 hover:underline">Semua agenda</a>
+        <a href="/agenda" class="text-sm font-bold text-brand-600 hover:underline">Semua agenda</a>
       </div>
       <div class="space-y-3">
         <?php if (!$agendas): ?><div class="surface p-8 text-center text-sm text-muted">Belum ada agenda terjadwal.</div><?php endif; ?>
         <?php foreach ($agendas as $agenda): ?>
           <?php $start = strtotime((string) $agenda['startsAt']); ?>
-          <a href="#agenda" class="surface flex items-center gap-4 p-4 transition hover:border-brand-200">
+          <a href="/agenda/<?= e($agenda['slug']) ?>" class="surface flex items-center gap-4 p-4 transition hover:border-brand-200">
             <div class="flex h-16 w-16 shrink-0 flex-col items-center justify-center rounded-xl bg-brand-50 text-brand-700">
               <span class="text-xl font-extrabold leading-none"><?= $start ? date('j', $start) : '' ?></span>
               <span class="mt-1 text-[11px] font-bold uppercase"><?= $start ? date('M', $start) : '' ?></span>
@@ -201,7 +193,7 @@ page_header('Beranda', $settings);
           <div class="mb-1 text-xs font-bold uppercase tracking-[0.18em] text-brand-600">Organisasi</div>
           <h2 class="text-2xl font-extrabold tracking-tight text-navy sm:text-3xl">OKP &amp; sayap KNPI</h2>
         </div>
-        <a href="#organisasi" class="text-sm font-bold text-brand-600 hover:underline">Semua OKP</a>
+        <a href="/organisasi" class="text-sm font-bold text-brand-600 hover:underline">Semua OKP</a>
       </div>
       <div class="grid gap-3 sm:grid-cols-2">
         <?php foreach ($organizations as $organization): ?>
@@ -229,7 +221,7 @@ page_header('Beranda', $settings);
       <div class="mb-1 text-xs font-bold uppercase tracking-[0.18em] text-brand-600">Galeri</div>
       <h2 class="text-2xl font-extrabold tracking-tight text-navy sm:text-3xl">Potret kegiatan</h2>
     </div>
-    <a href="#galeri" class="btn-outline">Buka galeri</a>
+    <a href="/galeri" class="btn-outline">Buka galeri</a>
   </div>
   <div class="grid grid-cols-2 gap-3 lg:grid-cols-4">
     <?php foreach ($gallery as $item): ?>
@@ -253,7 +245,7 @@ page_header('Beranda', $settings);
         <h2 class="mt-2 max-w-2xl text-2xl font-extrabold sm:text-3xl">Punya aspirasi untuk pemuda Morowali?</h2>
         <p class="mt-2 max-w-xl text-sm text-brand-100">Sampaikan langsung ke DPD KNPI Kabupaten Morowali. Setiap aspirasi dicatat dan ditindaklanjuti oleh pengurus.</p>
       </div>
-      <a href="login.php" class="btn-accent px-6">Masuk untuk kirim <?= icon('arrow', 'h-4 w-4') ?></a>
+      <a href="/login.php" class="btn-accent px-6">Masuk untuk kirim <?= icon('arrow', 'h-4 w-4') ?></a>
     </div>
   </div>
 </section>

@@ -10,7 +10,7 @@ $src = $PSScriptRoot
 $outZip = Join-Path $root 'knpi-php-upload.zip'
 
 $files = @(
-  'index.php', 'login.php', 'logout.php', 'install.php',
+  'index.php', 'login.php', 'logout.php', 'install.php', 'berita.php', 'agenda.php', 'galeri.php', 'organisasi.php', 'profil.php', 'akun.php',
   'lib.php', 'theme.php', 'config.sample.php', '.htaccess',
   'CARA-UPLOAD.txt'
 )
